@@ -30,7 +30,7 @@ export default function MemberRow({ user, onPay, onEdit, onDelete }) {
         <div className="text-[10px] text-ink-3 uppercase tracking-wider">adeudado</div>
       </div>
 
-      <div className="flex-shrink-0 flex items-center gap-1.5">
+      <div className="flex-shrink-0 flex items-center gap-1.5 member-actions">
         {!inactive && (
           <button onClick={() => onPay(user)} className="btn btn-primary btn-sm">
             Registrar pago

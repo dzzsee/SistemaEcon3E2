@@ -42,26 +42,28 @@ export default function App({ username }) {
   return (
     <div className="min-h-screen">
       <header className="border-b border-line-soft bg-surface/40 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
-          <Brand groupName={data?.settings?.groupName || 'Grupo'} />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+          <div className="flex items-center gap-4">
+            <Brand groupName={data?.settings?.groupName || 'Grupo'} />
 
-          <nav className="flex gap-1 ml-2" role="tablist" aria-label="Secciones">
+            <div className="ml-auto flex items-center gap-3">
+              <span className="hidden sm:inline text-xs text-ink-3 mono">{username}</span>
+              <button onClick={logout} className="btn btn-ghost btn-shrink">
+                Salir
+              </button>
+            </div>
+          </div>
+
+          <nav className="flex gap-1 mt-3 overflow-x-auto no-scrollbar -mx-1 px-1" role="tablist" aria-label="Secciones">
             <NavBtn active={view === 'panel'} onClick={() => setView('panel')} label="Panel" />
             <NavBtn active={view === 'usuarios'} onClick={() => setView('usuarios')} label="Usuarios" />
             <NavBtn active={view === 'pagos'} onClick={() => setView('pagos')} label="Pagos" />
             <NavBtn active={view === 'ajustes'} onClick={() => setView('ajustes')} label="Ajustes" />
           </nav>
-
-          <div className="ml-auto flex items-center gap-3">
-            <span className="hidden sm:inline text-xs text-ink-3 mono">{username}</span>
-            <button onClick={logout} className="btn btn-ghost btn-shrink">
-              Salir
-            </button>
-          </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 overflow-x-hidden">
         {loading && !data && <Loading />}
         {error && !data && (
           <div className="card p-8 text-center">
@@ -106,7 +108,7 @@ function NavBtn({ active, onClick, label }) {
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
         active ? 'bg-raised text-ink border border-line' : 'text-ink-2 hover:text-ink'
       }`}
     >

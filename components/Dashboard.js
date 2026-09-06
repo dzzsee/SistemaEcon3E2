@@ -24,7 +24,7 @@ export default function Dashboard({ data, onReload }) {
       <section>
         <div className="mb-4">
           <p className="eyebrow">Resumen</p>
-          <h1 className="text-2xl sm:text-3xl font-semibold mt-1">
+          <h1 className="text-2xl sm:text-3xl font-semibold mt-1 break-words">
             {stats.atrasados}{' '}
             <span className="text-ink-2 font-normal">
               {stats.atrasados === 1 ? 'miembro atrasado' : 'miembros atrasados'}
@@ -32,7 +32,7 @@ export default function Dashboard({ data, onReload }) {
           </h1>
           <p className="text-sm text-ink-2 mt-1">
             Deuda pendiente total{' '}
-            <span className="mono font-semibold text-ink">{fmtAmount(stats.totalDebt, settings.currency)}</span>
+            <span className="mono font-semibold text-ink break-all">{fmtAmount(stats.totalDebt, settings.currency)}</span>
           </p>
         </div>
 

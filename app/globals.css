@@ -138,6 +138,22 @@ body {
     padding: 0.35rem 0.7rem;
     font-size: 0.75rem;
   }
+  .btn-shrink {
+    padding: 0.5rem 1rem;
+  }
+  @media (max-width: 760px) {
+    .btn-shrink {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+    }
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
   .icon-btn {
     display: inline-flex;
     align-items: center;
@@ -178,6 +194,16 @@ body {
     .member-row {
       grid-template-columns: 1fr auto;
       grid-template-rows: auto auto;
+      gap: 0.6rem 0.75rem;
+    }
+    .member-row .member-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+    .member-row .member-actions .btn-primary {
+      flex: 1 1 auto;
+      justify-content: center;
     }
   }
   .stat-ok .text-ink-3,

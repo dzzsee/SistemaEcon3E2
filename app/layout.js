@@ -13,6 +13,12 @@ export const metadata = {
   description: 'Gestión económica de cuotas semanales para el grupo 3ro E2',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0d0e12',
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="es" className={`${sora.variable} ${plexMono.variable}`}>
