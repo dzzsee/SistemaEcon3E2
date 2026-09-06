@@ -49,7 +49,7 @@ export default function LoginForm() {
                 className="field-input"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
+                autoComplete="off"
                 autoFocus
               />
             </div>
@@ -60,7 +60,7 @@ export default function LoginForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete="off"
               />
             </div>
             {error && <p className="text-sm text-bad">{error}</p>}
@@ -69,10 +69,6 @@ export default function LoginForm() {
             </button>
           </form>
         </div>
-
-        <p className="text-xs text-ink-3 text-center mt-6 mono">
-          Usuario por defecto: <span className="text-ink-2">admin</span> / <span className="text-ink-2">admin123</span>
-        </p>
       </div>
     </main>
   )

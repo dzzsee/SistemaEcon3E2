@@ -5,6 +5,7 @@ import Dashboard from '@/components/Dashboard'
 import Usuarios from '@/components/Usuarios'
 import Pagos from '@/components/Pagos'
 import Ajustes from '@/components/Ajustes'
+import { fmtAmount } from '@/lib/format'
 
 export default function App({ username }) {
   const [view, setView] = useState('panel')
@@ -82,6 +83,17 @@ export default function App({ username }) {
           </>
         )}
       </main>
+
+      {data && (
+        <div className="fixed bottom-4 right-4 z-30">
+          <div className="card px-4 py-2.5 flex items-center gap-2.5 shadow-lg shadow-black/40 border border-line">
+            <span className="text-[10px] uppercase tracking-wider text-ink-3 mono">Recaudado</span>
+            <span className="mono font-semibold text-sm text-ink">
+              {fmtAmount(data.stats.totalCollected, data.settings.currency)}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -51,6 +51,10 @@ export async function GET() {
   const oneWeek = atrasados.filter((r) => r.status.key === '1sem').length
   const twoWeeks = atrasados.filter((r) => r.status.key === '2sem').length
 
+  const totalCollected = d
+    .prepare('SELECT COALESCE(SUM(amount), 0) AS total FROM payments')
+    .get().total
+
   return json({
     settings,
     stats: {
@@ -61,6 +65,7 @@ export async function GET() {
       oneWeek,
       twoWeeks,
       totalDebt,
+      totalCollected,
     },
     users: rows,
   })
