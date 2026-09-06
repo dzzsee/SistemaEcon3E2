@@ -73,3 +73,6 @@ data/           base de datos SQLite (gitignored)
 | `ADMIN_USERNAME`   | Usuario administrador                | `admin`                              |
 | `ADMIN_PASSWORD`   | Contraseña del administrador         | `admin123`                           |
 | `AUTH_SECRET`      | Clave para firmar la sesión (JWT)    | valor de desarrollo                  |
+| `SQLITE_DATA_DIR`  | Directorio donde se guarda SQLite           | `data/` local; `/tmp/sistema-econ-data` en Vercel |
+
+En Vercel, `/tmp` es escribible pero temporal. Para conservar usuarios, pagos y ajustes entre despliegues o reinicios se necesita migrar la base de datos a un servicio persistente.
