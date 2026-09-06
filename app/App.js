@@ -42,7 +42,7 @@ export default function App({ username }) {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-line-soft bg-surface/40 backdrop-blur sticky top-0 z-20">
+      <header className="material border-b border-line-soft sticky top-0 z-20 shadow-lg shadow-black/20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex items-center gap-4">
             <Brand groupName={data?.settings?.groupName || 'Grupo'} />
@@ -55,7 +55,11 @@ export default function App({ username }) {
             </div>
           </div>
 
-          <nav className="flex gap-1 mt-3 overflow-x-auto no-scrollbar -mx-1 px-1" role="tablist" aria-label="Secciones">
+          <nav
+            className="flex gap-1 mt-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-0.5"
+            role="tablist"
+            aria-label="Secciones"
+          >
             <NavBtn active={view === 'panel'} onClick={() => setView('panel')} label="Panel" />
             <NavBtn active={view === 'usuarios'} onClick={() => setView('usuarios')} label="Usuarios" />
             <NavBtn active={view === 'pagos'} onClick={() => setView('pagos')} label="Pagos" />
@@ -64,7 +68,7 @@ export default function App({ username }) {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 overflow-x-hidden">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 overflow-x-hidden">
         {loading && !data && <Loading />}
         {error && !data && (
           <div className="card p-8 text-center">
@@ -86,7 +90,7 @@ export default function App({ username }) {
 
       {data && (
         <div className="fixed bottom-4 right-4 z-30">
-          <div className="card px-4 py-2.5 flex items-center gap-2.5 shadow-lg shadow-black/40 border border-line">
+          <div className="material px-4 py-2.5 flex items-center gap-2.5 shadow-lg shadow-black/40 rounded-2xl">
             <span className="text-[10px] uppercase tracking-wider text-ink-3 mono">Recaudado</span>
             <span className="mono font-semibold text-sm text-ink">
               {fmtAmount(data.stats.totalCollected, data.settings.currency)}
@@ -121,7 +125,9 @@ function NavBtn({ active, onClick, label }) {
       aria-selected={active}
       onClick={onClick}
       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-        active ? 'bg-raised text-ink border border-line' : 'text-ink-2 hover:text-ink'
+        active
+          ? 'bg-white/10 text-ink ring-1 ring-inset ring-white/10'
+          : 'text-ink-2 hover:text-ink'
       }`}
     >
       {label}

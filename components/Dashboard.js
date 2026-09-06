@@ -11,6 +11,10 @@ export default function Dashboard({ data, onReload }) {
   const atrasados = users.filter((u) => u.active && u.status.atrasado)
   const [payTarget, setPayTarget] = useState(null)
 
+  function exportDebtors() {
+    window.location.href = '/api/debtors/export'
+  }
+
   const sorted = [...users].sort((a, b) => {
     const rank = { '2sem': 3, '1sem': 2, aldia: 1 }
     const ra = rank[a.status?.key] || 0
@@ -22,18 +26,23 @@ export default function Dashboard({ data, onReload }) {
   return (
     <div className="space-y-8">
       <section>
-        <div className="mb-4">
-          <p className="eyebrow">Resumen</p>
-          <h1 className="text-2xl sm:text-3xl font-semibold mt-1 break-words">
-            {stats.atrasados}{' '}
-            <span className="text-ink-2 font-normal">
-              {stats.atrasados === 1 ? 'miembro atrasado' : 'miembros atrasados'}
-            </span>
-          </h1>
-          <p className="text-sm text-ink-2 mt-1">
-            Deuda pendiente total{' '}
-            <span className="mono font-semibold text-ink break-all">{fmtAmount(stats.totalDebt, settings.currency)}</span>
-          </p>
+        <div className="mb-4 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="eyebrow">Resumen</p>
+            <h1 className="text-2xl sm:text-3xl font-semibold mt-1 break-words">
+              {stats.atrasados}{' '}
+              <span className="text-ink-2 font-normal">
+                {stats.atrasados === 1 ? 'miembro atrasado' : 'miembros atrasados'}
+              </span>
+            </h1>
+            <p className="text-sm text-ink-2 mt-1">
+              Deuda pendiente total{' '}
+              <span className="mono font-semibold text-ink break-all">{fmtAmount(stats.totalDebt, settings.currency)}</span>
+            </p>
+          </div>
+          <button onClick={exportDebtors} className="btn btn-ghost">
+            <DownloadIcon /> Exportar deudores
+          </button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -84,5 +93,13 @@ export default function Dashboard({ data, onReload }) {
         />
       )}
     </div>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" />
+    </svg>
   )
 }

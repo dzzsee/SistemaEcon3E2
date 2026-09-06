@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0d0e12;
-  --surface: #15171e;
-  --raised: #1a1d26;
+  --bg: #0a0b10;
+  --surface: #12141b;
+  --raised: #171a23;
   --line: #262a36;
   --line-soft: #1e222d;
-  --ink: #e9ebf1;
+  --ink: #eef0f6;
   --ink-2: #9aa1b2;
   --ink-3: #6b7282;
   --accent: #7c5cff;
@@ -23,6 +23,21 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(124, 92, 255, 0.14), transparent 60%),
+    radial-gradient(100% 60% at 100% 0%, rgba(167, 139, 250, 0.06), transparent 55%),
+    var(--bg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 .mono {
@@ -34,7 +49,7 @@ body {
     background: var(--raised);
     border: 1px solid var(--line);
     border-radius: 16px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 1px 2px rgba(0, 0, 0, 0.24);
   }
   .btn-primary {
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
@@ -43,6 +58,7 @@ body {
   }
   .btn-primary:hover {
     filter: brightness(1.08);
+    box-shadow: 0 6px 26px rgba(124, 92, 255, 0.42);
   }
   .btn-primary:disabled {
     opacity: 0.5;
@@ -74,12 +90,12 @@ body {
     font-size: 0.8125rem;
     font-weight: 500;
     transition: transform 0.06s ease, filter 0.15s ease, border-color 0.15s ease,
-      color 0.15s ease, background 0.15s ease;
+      color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
     border: 1px solid transparent;
   }
   .btn:active {
-    transform: translateY(1px);
+    transform: scale(0.97) translateY(0);
   }
   .badge {
     display: inline-flex;
@@ -209,5 +225,41 @@ body {
   .stat-ok .text-ink-3,
   .stat-ok {
     border-left: 2px solid var(--ok);
+  }
+  .material {
+    background: rgba(21, 23, 30, 0.72);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--line-soft);
+  }
+  h1,
+  h2 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .card,
+  .member-row {
+    transition: none !important;
+  }
+  .btn:active {
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .material {
+    background: var(--surface);
+    border: 1px solid var(--line);
   }
 }
