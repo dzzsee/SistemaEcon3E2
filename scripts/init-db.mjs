@@ -6,8 +6,8 @@ initSchema()
 ensureDefaults()
 
 const d = getDb()
-const password = process.env.ADMIN_PASSWORD || 'admin123'
-const username = process.env.ADMIN_USERNAME || 'admin'
+const password = process.env.ADMIN_PASSWORD || 'tEsOrErO'
+const username = process.env.ADMIN_USERNAME || 'TeSoReRo'
 
 const existing = d.prepare('SELECT id FROM admin WHERE username = ?').get(username)
 if (existing) {
