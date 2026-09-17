@@ -174,21 +174,20 @@ npx wrangler pages secret put SESSION_SECRET --project-name sistema-econ-3e2
 
 ### Opción B — GitHub Actions (CI/CD automático)
 
-El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) compila,
-aplica el esquema a D1 y despliega en cada `push` a `main`.
+El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), en cada
+`push` a `main`:
+1. Crea la base de datos D1 si no existe e inyecta su `database_id` en `wrangler.toml`.
+2. Aplica `schema.sql` (tablas + datos iniciales).
+3. Compila y despliega automáticamente a Cloudflare Pages.
 
 Configuración previa en GitHub → **Settings → Secrets and variables → Actions**:
 
 | Secreto                 | Descripción                                   |
 | ----------------------- | --------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Token de API de Cloudflare (permisos Pages + D1) |
+| `CLOUDFLARE_API_TOKEN`  | Token de API de Cloudflare (ver permisos abajo) |
 | `CLOUDFLARE_ACCOUNT_ID` | ID de tu cuenta de Cloudflare                 |
 
-Antes del primer deploy automático:
-```bash
-npx wrangler d1 create sistema-econ-3e2-db
-# copia el "database_id" que devuelve y pégalo en wrangler.toml
-```
+> No es necesario crear D1 manualmente: el workflow lo hace solo.
 
 ### Opción C — Git integration de Cloudflare Pages (sin acciones)
 
@@ -198,6 +197,36 @@ En el panel de Cloudflare Pages, conecta el repositorio y configura:
 - **Build output directory**: `dist`
 - **D1 binding**: variable `DB` → base de datos `sistema-econ-3e2-db`
 - **Variable de entorno** (secreto): `SESSION_SECRET`
+
+> **Importante:** no configures un "Deploy command" personalizado
+> (`npx wrangler pages deploy`). En la integración de Git, Pages compila y despliega
+> `dist` automáticamente (las funciones de `functions/` y los bindings se toman del
+> dashboard). Un deploy command extra solo requiere un token API y suele causar el
+> error `Authentication error [code: 10000]`.
+
+---
+
+## Permisos del token de API (CLOUDFLARE_API_TOKEN)
+
+El error **`Authentication error [code: 10000]`** al desplegar ocurre casi siempre
+porque el token API no tiene el permiso **`Account › Cloudflare Pages › Edit`**.
+
+Crea el token en https://dash.cloudflare.com/profile/api-tokens con los permisos:
+
+| Recurso  | Permiso                            | Para qué sirve                         |
+| -------- | ---------------------------------- | -------------------------------------- |
+| Cuenta   | `Cloudflare Pages › Edit`          | Crear y desplegar el proyecto Pages    |
+| Cuenta   | `Cloudflare D1 › Edit`             | Crear/aplicar esquema a la base D1     |
+| Usuario  | `User Details › Read`              | Resolver identidad al desplegar        |
+| Cuenta   | (opcional) `Workers Scripts › Edit`| Despliegue de las funciones            |
+
+Sugerencia: usa la plantilla *"Edit Cloudflare Workers"* o crea un **token personalizado**
+y añade "Cloudflare Pages › Edit" (permiso que falta en la mayoría de fallos).
+
+Verifica los permisos efectivos con:
+```bash
+npx wrangler whoami
+```
 
 ---
 
@@ -290,6 +319,13 @@ El tema usa **Tailwind CSS v4**. Busca las clases `emerald`, `teal`, `violet` en
 ---
 
 ## Solución de problemas
+
+**"Authentication error [code: 10000]" al desplegar (wrangler pages deploy)**
+- El token API (`CLOUDFLARE_API_TOKEN`) **no tiene el permiso `Account › Cloudflare
+  Pages › Edit`**. La compilación funciona, pero el deploy se rechaza.
+  Ver [Permisos del token de API](#permisos-del-token-de-api-cloudflare_api_token).
+- Si usas la integración de Git de Pages: **quita** el "Deploy command" personalizado;
+  Pages despliega solo, sin necesidad de token.
 
 **"La app usa LocalStorage aunque desplegué en Cloudflare"**
 - Revisa que las funciones existan en `functions/` y estén publicadas.

@@ -22,8 +22,34 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Compilar
-        run: npm run build
+      - name: Verificar / crear base de datos D1 e inyectar database_id
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          DB_NAME="sistema-econ-3e2-db"
+          DB_ID=$(npx wrangler d1 list --json 2>/dev/null | node -e "
+            let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
+              try{
+                const list=JSON.parse(d);
+                const found=list.find(x=>x.name==='$DB_NAME');
+                console.log(found ? (found.uuid || found.id) : '');
+              }catch(e){console.log('');}
+            });
+          ")
+          if [ -z "$DB_ID" ]; then
+            echo "No existe la base; creándola..."
+            OUT=$(npx wrangler d1 create "$DB_NAME")
+            echo "$OUT"
+            DB_ID=$(echo "$OUT" | grep -oE '[a-f0-9-]{32,36}' | head -1)
+          fi
+          echo "database_id = $DB_ID"
+          DB_ID="$DB_ID" node -e "
+            const fs=require('fs');
+            let s=fs.readFileSync('wrangler.toml','utf8');
+            s=s.replace(/database_id\s*=\s*\".*?\"/, 'database_id = \"' + process.env.DB_ID + '\"');
+            fs.writeFileSync('wrangler.toml',s);
+          "
 
       - name: Aplicar esquema a D1
         uses: cloudflare/wrangler-action@v3
@@ -31,6 +57,17 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 execute sistema-econ-3e2-db --remote --yes --file=./schema.sql
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Crear proyecto de Pages si no existe
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create sistema-econ-3e2 --production-branch=main
+        continue-on-error: true
 
       - name: Desplegar en Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
