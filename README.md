@@ -204,6 +204,12 @@ En el panel de Cloudflare Pages, conecta el repositorio y configura:
 > dashboard). Un deploy command extra solo requiere un token API y suele causar el
 > error `Authentication error [code: 10000]`.
 
+Si los logs muestran `Executing user deploy command: npx wrangler pages deploy`,
+ese despliegue viene de la integración Git de Pages, no de GitHub Actions. En
+**Workers & Pages → proyecto → Settings → Builds & deployments**, deja vacío
+**Deploy command** y conserva `npm run build` como **Build command**. Después
+guarda y vuelve a ejecutar el despliegue.
+
 ---
 
 ## Permisos del token de API (CLOUDFLARE_API_TOKEN)

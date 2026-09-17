@@ -22,6 +22,21 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Validar acceso a Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Faltan CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID en los secretos de GitHub."
+            exit 1
+          fi
+          if ! npx wrangler pages project list >/dev/null; then
+            echo "El token no puede consultar Cloudflare Pages."
+            echo "Crea un token con Account > Cloudflare Pages > Edit y actualiza CLOUDFLARE_API_TOKEN."
+            exit 1
+          fi
+
       - name: Verificar / crear base de datos D1 e inyectar database_id
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
