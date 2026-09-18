@@ -10,6 +10,8 @@
     "db:migrate:remote": "wrangler d1 execute sistema-econ-3e2-db --remote --file=./schema.sql",
     "db:members:local": "wrangler d1 execute sistema-econ-3e2-db --local --file=./migrations/001_real_miembros.sql",
     "db:members:remote": "wrangler d1 execute sistema-econ-3e2-db --remote --file=./migrations/001_real_miembros.sql",
+    "db:periodo:local": "wrangler d1 execute sistema-econ-3e2-db --local --file=./migrations/002_semanas_2025.sql",
+    "db:periodo:remote": "wrangler d1 execute sistema-econ-3e2-db --remote --file=./migrations/002_semanas_2025.sql",
     "deploy": "wrangler pages deploy . --project-name sistema-econ-3e2"
   },
   "devDependencies": {

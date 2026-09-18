@@ -14,18 +14,20 @@ y optimizado para **móviles**.
 
 ## Características
 
-- **Lista fija de integrantes**: 20 alumnos ordenados por número de lista.
-- **Semanas por calendario**: cada semana va de lunes a domingo.
-- **Monto de cuota configurable** por semana (valor por defecto: 20).
+- **Lista fija de integrantes**: 32 alumnos (lista real BACH Informática 2º E2 2025/2026, excluidos #9 y #25).
+- **Periodo lectivo configurable**: por defecto del primer lunes de octubre hasta mediados de mayo.
+- **Cuota semanal configurable**: $2.50 por defecto (ajustable desde Configuración).
+- **Deuda y % de cumplimiento calculados solo sobre las semanas ya cursadas** (fecha de fin ≤ hoy).
 - **Estados de pago según lo abonado**:
   - `Pagado` → abonado ≥ cuota
   - `Abonado` → abonado > 0 y < cuota
   - `Deuda` → sin abonos
-- **Múltiples abonos por semana**: los abonos parciales se acumulan (ej. 12 + 8 = 20).
-- **Balance global**: total recaudado, deuda pendiente, % de cumplimiento y saldo esperado.
+- **Múltiples abonos por semana**: los abonos parciales se acumulan (ej. 1.25 + 1.25 = 2.50).
+- **Balance global**: total recaudado, deuda pendiente (según semanas cursadas), % de cumplimiento y saldo esperado.
 - **Panel de alumnos** con historial completo y barra de cumplimiento individual.
 - **Exportación**: Excel/CSV y reporte PDF listo para compartir (**jsPDF desde CDN**).
-- **Acceso restringido** a 3 administradores: Tutor, Presidente y Tesorero.
+- **Acceso restringido** a 3 administradores: Tutor, Presidente y Tesorero (editable en Configuración).
+- **Pestaña Configuración**: cuota semanal, fechas del periodo, regenerar semanas del periodo y editar usuarios.
 - **Se pueden agregar semanas nuevas** desde la pestaña "Exportar".
 
 ---
@@ -319,6 +321,8 @@ npx wrangler whoami
 | `npm run db:migrate:remote`       | Aplica `schema.sql` a la D1 remota           |
 | `npm run db:members:local`        | Reemplaza miembros por la lista real (local) |
 | `npm run db:members:remote`       | Reemplaza miembros por la lista real (remota)|
+| `npm run db:periodo:local`        | Reconstruye semanas del periodo (local)      |
+| `npm run db:periodo:remote`       | Reconstruye semanas del periodo (remota)     |
 | `npm run deploy`                  | Despliega el estático con wrangler           |
 | `bash scripts/setup-cloudflare.sh`| Deploy completo automático (Git Bash/WSL)    |
 | `npx wrangler pages secret put SESSION_SECRET --project-name sistema-econ-3e2` | Configura el secreto de sesión |
@@ -351,30 +355,29 @@ Formato: `{ numero_lista, nombre }`. Se muestran en orden ascendente.
 
 Roles válidos: `tutor`, `presidente`, `tesorero`.
 
-> En producción **cambia el PIN**: edita la fila en D1.
+> **Ahora se editan desde la pestaña Configuración** de la app (nombre, usuario, PIN).
+> Para cambiar desde CLI en producción:
 > ```bash
 > npx wrangler d1 execute sistema-econ-3e2-db --remote --command \
 >   "UPDATE administradores SET pin = 'NUEVO' WHERE usuario = 'tutor';"
 > ```
-> (Repite con `presidente` y `tesorero`.)
 
-### Monto de cuota por defecto y semanas iniciales
+### Cuota semanal, periodo lectivo y calendario
 
-En `functions/_lib/db.js`, función `generateDefaultWeeks(count = 10, startOffset = -2)`
-con `monto_cuota: 20.0` dentro. Aplica si la tabla `semanas` está vacía.
+La tabla `configuracion` (clave/valor) almacena:
+- `cuota_semanal` — monto por semana (defecto 2.50)
+- `periodo_inicio` — fecha de inicio del periodo (defecto 1 de octubre del año lectivo actual)
+- `periodo_fin` — fecha de fin (defecto 15 de mayo del año siguiente)
 
-Las semanas nuevas se crean desde **Exportar → Agregar semana** (con su monto).
-La semilla de días lunes/domingo se calcula sola al insertar.
+Se editan desde la **pestaña Configuración** de la app:
+- **Guardar** → actualiza valores en D1 (la cuota aplica a semanas nuevas).
+- **Regenerar semanas** → reconstruye todo el calendario del periodo (borra abonos y semanas, vuelve a insertar).
+
+> **Deuda y % de cumplimiento** solo consideran semanas ya cursadas (fecha_fin ≤ hoy).
 
 ### Moneda y formato
 
-En `js/utils.js`, función `money()`:
-
-```js
-new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', ... })
-```
-
-Cambia `es-MX`/`MXN` por tu localidad/divisa si lo necesitas.
+En `js/utils.js`, función `money()` formatea con símbolo `$` y 2 decimales fijos.
 
 ### Colores y tema
 
