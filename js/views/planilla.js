@@ -39,29 +39,10 @@ export function renderPlanilla(
         <button class="sel-arrow" data-arrow="-1" aria-label="Semana anterior">${iconHtml('chevronLeft')}</button>
         <div class="week-pills no-scrollbar">
           ${weeks
-            .map((w) => {
-              // Estado de la semana: contar pagados/abonados/deudas
-              let wp = 0, wa = 0, wd = 0;
-              for (const m of status.members) {
-                const key = `${m.numero_lista}-${w.id}`;
-                const g = status.grouped ? status.grouped[key] : null;
-                const abonado = g ? Number(g.total) : 0;
-                const cuota = Number(w.monto_cuota);
-                if (abonado >= cuota) wp++;
-                else if (abonado > 0) wa++;
-                else wd++;
-              }
-              const active = w.id === selectedWeek.id;
-              return `
-                <button class="week-pill ${active ? 'week-pill-active' : ''}" data-week="${w.id}">
-                  <span>Sem. ${w.numero_semana}</span>
-                  <span class="pill-status">
-                    <span class="dot emerald" title="Pagados: ${wp}"></span>
-                    <span class="dot amber" title="Abonados: ${wa}"></span>
-                    <span class="dot rose" title="Deudas: ${wd}"></span>
-                  </span>
-                </button>`;
-            })
+            .map(
+              (w) =>
+                `<button class="week-pill ${w.id === selectedWeek.id ? 'week-pill-active' : ''}" data-week="${w.id}">Sem. ${w.numero_semana}</button>`
+            )
             .join('')}
         </div>
         <button class="sel-arrow" data-arrow="1" aria-label="Semana siguiente">${iconHtml('chevronRight')}</button>
@@ -94,97 +75,91 @@ export function renderPlanilla(
         </div>
       </div>
 
-      <!-- Lista de pagos de la semana seleccionada (desktop + móvil) -->
-      <div class="glass-panel week-payments">
-        <h3 class="payments-title">${iconHtml('list')} Pagos de ${weekLabel(selectedWeek)}</h3>
-        <div class="payments-list">
-          ${status.members
-            .map((m) => {
-              const key = `${m.numero_lista}-${selectedWeek.id}`;
-              const g = status.grouped ? status.grouped[key] : null;
-              const abonado = g ? Number(g.total) : 0;
-              const cuota = Number(selectedWeek.monto_cuota);
-              const deuda = Math.max(0, cuota - abonado);
-              const estado = computeEstado(abonado, cuota);
-              const est = estadoInfo(estado);
-
-              let sub, actionLabel;
-              if (estado === 'pagado') { sub = `${money(abonado)} · Completado`; actionLabel = 'Registrado'; }
-              else if (estado === 'abonado') { sub = `Abonado ${money(abonado)} · falta ${money(deuda)}`; actionLabel = 'Abonar'; }
-              else { sub = `Debe ${money(deuda)}`; actionLabel = 'Cobrar'; }
-
-              return `
-                <button class="payment-row" data-member="${m.numero_lista}">
-                  <div class="payment-num">${m.numero_lista}</div>
-                  <div class="payment-main">
-                    <p class="payment-name">${esc(m.nombre)}</p>
-                    <p class="payment-sub">${sub}</p>
-                  </div>
-                  <div class="payment-state">
-                    <span class="state-dot ${est.dot}"></span>
-                    <span class="collect-btn ${abonado >= cuota ? 'collect-btn-solid' : 'collect-btn-soft'}">
-                      ${iconHtml('plus')} ${actionLabel}
-                    </span>
-                  </div>
-                </button>`;
-            })
-            .join('')}
+      <!-- Matriz escritorio -->
+      <div class="glass-panel matrix-wrap">
+        <div class="matrix-scroll">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th class="sticky-col">#</th>
+                <th class="sticky-col sticky-col-name">Integrante</th>
+                <th style="text-align:center;padding-inline:0.75rem;">Anticipado</th>
+                ${weeks
+                  .map(
+                    (w) =>
+                      `<th style="text-align:center;">Sem ${w.numero_semana}<span class="th-date">${w.fecha_inicio.slice(5, 10)}</span></th>`
+                  )
+                  .join('')}
+                <th style="text-align:center;padding-inline:0.75rem;">Total abonado</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${status.members
+                .map((m) => {
+                  const row = matrix[m.numero_lista];
+                  return `
+                    <tr>
+                      <td class="sticky-col num-cell">${m.numero_lista}</td>
+                      <td class="sticky-col-name">${esc(m.nombre)}</td>
+                      <td style="text-align:center;padding-inline:0.75rem;;font-size:0.75rem;color:var(--text-2);">${money(row.total_abonado)}</td>
+                      ${weeks
+                        .map((w) => {
+                          const cell = row.cells[w.id];
+                          const est = estadoInfo(cell.estado);
+                          const selected = w.id === selectedWeek.id;
+                          return `
+                            <td>
+                              <button class="cell-badge ${est.cls} ${selected ? 'cell-selected' : ''}" 
+                                data-cell-week="${w.id}" data-cell-member="${m.numero_lista}"
+                                title="${esc(m.nombre)} · ${weekLabel(w)}">
+                                ${cell.abonado > 0 ? money(cell.abonado) : '·'}
+                              </button>
+                            </td>`;
+                        })
+                        .join('')}
+                      <td class="total-cell">${money(row.total_abonado)}</td>
+                    </tr>`;
+                })
+                .join('')}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <!-- Matriz escritorio (opcional, colapsable) -->
-      <details class="matrix-details">
-        <summary class="matrix-summary">${iconHtml('table')} Ver matriz completa</summary>
-        <div class="glass-panel matrix-wrap">
-          <div class="matrix-scroll">
-            <table class="matrix-table">
-              <thead>
-                <tr>
-                  <th class="sticky-col">#</th>
-                  <th class="sticky-col sticky-col-name">Integrante</th>
-                  <th style="text-align:center;padding-inline:0.75rem;">Anticipado</th>
-                  ${weeks
-                    .map(
-                      (w) =>
-                        `<th style="text-align:center;">Sem ${w.numero_semana}<span class="th-date">${w.fecha_inicio.slice(5, 10)}</span></th>`
-                    )
-                    .join('')}
-                  <th style="text-align:center;padding-inline:0.75rem;">Total abonado</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${status.members
-                  .map((m) => {
-                    const row = matrix[m.numero_lista];
-                    return `
-                      <tr>
-                        <td class="sticky-col num-cell">${m.numero_lista}</td>
-                        <td class="sticky-col-name">${esc(m.nombre)}</td>
-                        <td style="text-align:center;padding-inline:0.75rem;;font-size:0.75rem;color:var(--text-2);">${money(row.total_abonado)}</td>
-                        ${weeks
-                          .map((w) => {
-                            const cell = row.cells[w.id];
-                            const est = estadoInfo(cell.estado);
-                            const selected = w.id === selectedWeek.id;
-                            return `
-                              <td>
-                                <button class="cell-badge ${est.cls} ${selected ? 'cell-selected' : ''}" 
-                                  data-cell-week="${w.id}" data-cell-member="${m.numero_lista}"
-                                  title="${esc(m.nombre)} · ${weekLabel(w)}">
-                                  ${cell.abonado > 0 ? money(cell.abonado) : '·'}
-                                </button>
-                              </td>`;
-                          })
-                          .join('')}
-                        <td class="total-cell">${money(row.total_abonado)}</td>
-                      </tr>`;
-                  })
-                  .join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </details>
+      <!-- Lista móvil -->
+      <div class="mobile-list">
+        ${status.members
+          .map((m) => {
+            const key = `${m.numero_lista}-${selectedWeek.id}`;
+            const g = status.grouped ? status.grouped[key] : null;
+            const abonado = g ? Number(g.total) : 0;
+            const cuota = Number(selectedWeek.monto_cuota);
+            const deuda = Math.max(0, cuota - abonado);
+            const estado = computeEstado(abonado, cuota);
+            const est = estadoInfo(estado);
+
+            let sub;
+            if (estado === 'pagado') sub = `${money(abonado)} · Completado`;
+            else if (estado === 'abonado') sub = `Abonado ${money(abonado)} · falta ${money(deuda)}`;
+            else sub = `Debe ${money(deuda)}`;
+
+            return `
+              <button class="glass-card glass-card-hover member-row" data-mobile-member="${m.numero_lista}">
+                <div class="member-num">${m.numero_lista}</div>
+                <div class="member-row-main">
+                  <p class="member-row-name">${esc(m.nombre)}</p>
+                  <p class="member-row-sub">${sub}</p>
+                </div>
+                <div class="member-row-state">
+                  <span class="state-dot ${est.dot}"></span>
+                  <span class="collect-btn ${abonado >= cuota ? 'collect-btn-solid' : 'collect-btn-soft'}">
+                    ${iconHtml('plus')} ${abonado >= cuota ? 'Registrado' : 'Cobrar'}
+                  </span>
+                </div>
+              </button>`;
+          })
+          .join('')}
+      </div>
     </div>
   `;
 
@@ -211,9 +186,9 @@ export function renderPlanilla(
     });
   });
 
-  parent.querySelectorAll('.payment-row').forEach((btn) => {
+  parent.querySelectorAll('[data-mobile-member]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const member = status.members.find((m) => m.numero_lista === Number(btn.dataset.member));
+      const member = status.members.find((m) => m.numero_lista === Number(btn.dataset.mobileMember));
       openAbono({ member, week: selectedWeek });
     });
   });

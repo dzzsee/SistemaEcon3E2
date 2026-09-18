@@ -124,7 +124,8 @@ export function renderDashboard(parent, { status, balance, session, onNavigate }
         </div>
         <div class="week-grid">
           ${[...status.weeks]
-            .slice(0, 6)
+            .slice(-6)
+            .reverse()
             .map((w) => weekCard(w, status))
             .join('')}
         </div>
