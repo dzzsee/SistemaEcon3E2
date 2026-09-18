@@ -12,14 +12,14 @@ export async function onRequestGet(context) {
   const config = await getConfig(context.env.DB);
 
   const members = await context.env.DB.prepare('SELECT numero_lista FROM miembros').all();
-  const semanas = await context.env.DB.prepare('SELECT id, fecha_fin, monto_cuota FROM semanas').all();
+  const semanas = await context.env.DB.prepare('SELECT id, fecha_inicio, fecha_fin, monto_cuota FROM semanas').all();
   const recaudadoRow = await context.env.DB.prepare(
     'SELECT COALESCE(SUM(monto), 0) as total FROM abonos'
   ).first();
 
   // Solo las semanas ya cursadas (terminadas hasta hoy)
   const today = new Date().toISOString().slice(0, 10);
-  const semanasCursadas = semanas.results.filter((s) => s.fecha_fin <= today);
+  const semanasCursadas = semanas.results.filter((s) => s.fecha_inicio <= today);
   const numeroSemanas = semanasCursadas.length;
 
   const totalRecaudado = Number(recaudadoRow.total);
