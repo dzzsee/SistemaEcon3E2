@@ -20,7 +20,7 @@ jobs:
           cache: npm
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install
 
       - name: Validar acceso a Cloudflare Pages
         env:
@@ -73,9 +73,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 execute sistema-econ-3e2-db --remote --yes --file=./schema.sql
 
-      - name: Compilar
-        run: npm run build
-
       - name: Crear proyecto de Pages si no existe
         uses: cloudflare/wrangler-action@v3
         with:
@@ -84,9 +81,9 @@ jobs:
           command: pages project create sistema-econ-3e2 --production-branch=main
         continue-on-error: true
 
-      - name: Desplegar en Cloudflare Pages
+      - name: Desplegar sitio estático en Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=sistema-econ-3e2 --branch=main
+          command: pages deploy . --project-name=sistema-econ-3e2 --branch=main

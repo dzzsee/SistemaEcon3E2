@@ -1,16 +1,38 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#030712" />
     <title>3E2 - Control de Cuotas Semanales</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
   </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white font-['Plus_Jakarta_Sans',sans-serif]">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+  <body>
+    <div id="app" class="app-root"></div>
+    <div id="modal-root"></div>
+    <div id="toast-root"></div>
+
+    <!-- Exportación PDF (jsPDF desde CDN) -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Aplicación (JS puro) -->
+    <script defer src="/js/utils.js"></script>
+    <script defer src="/js/api.js"></script>
+    <script defer src="/js/export.js"></script>
+    <script defer src="/js/views/login.js"></script>
+    <script defer src="/js/views/dashboard.js"></script>
+    <script defer src="/js/views/planilla.js"></script>
+    <script defer src="/js/views/abono-modal.js"></script>
+    <script defer src="/js/views/alumnos.js"></script>
+    <script defer src="/js/views/exportar.js"></script>
+    <script defer src="/js/app.js"></script>
   </body>
 </html>

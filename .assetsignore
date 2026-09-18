@@ -1,0 +1,14 @@
+# Archivos de proyecto que NO se suben como estáticos a Pages
+# (las funciones siguen compilándose desde functions/ por separado)
+wrangler.toml
+package.json
+package-lock.json
+README.md
+schema.sql
+.git
+.gitignore
+.github
+node_modules
+scripts
+.dev.vars
+.assetsignore

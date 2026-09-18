@@ -3,30 +3,14 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "Sistema de control de cuotas semanales 3E2 — HTML/CSS/JS puro + Cloudflare Pages Functions + D1",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "dev:cf": "npm run build && wrangler pages dev dist",
+    "dev:cf": "wrangler pages dev . --port 8788",
     "db:migrate:local": "wrangler d1 execute sistema-econ-3e2-db --local --file=./schema.sql",
-    "db:migrate:remote": "wrangler d1 execute sistema-econ-3e2-db --remote --file=./schema.sql"
-  },
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "jspdf": "^2.5.2",
-    "jspdf-autotable": "^3.8.4",
-    "lucide-react": "^1.16.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.0.2"
+    "db:migrate:remote": "wrangler d1 execute sistema-econ-3e2-db --remote --file=./schema.sql",
+    "deploy": "wrangler pages deploy . --project-name sistema-econ-3e2"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.2",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
-    "@vitejs/plugin-react": "^4.3.4",
-    "tailwindcss": "^4.1.2",
-    "vite": "^6.2.0",
     "wrangler": "^4.133.0"
   }
 }

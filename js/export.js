@@ -1,6 +1,8 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { money } from './cn.js';
+// ================================================================
+// Exportación: Excel/CSV y reporte PDF (jsPDF desde CDN)
+// ================================================================
+
+import { money, weekLabel } from './utils.js';
 
 function download(filename, content, type) {
   const blob = new Blob([content], { type });
@@ -22,8 +24,8 @@ function buildRows(status) {
     for (const w of status.weeks) {
       const key = `${m.numero_lista}-${w.id}`;
       const g = status.grouped?.[key];
-      const abonado = g ? g.total : 0;
-      const deuda = Math.max(0, w.monto_cuota - abonado);
+      const abonado = g ? Number(g.total) : 0;
+      const deuda = Math.max(0, Number(w.monto_cuota) - abonado);
       totalAbonado += abonado;
       totalDeuda += deuda;
       cells[w.id] = { abonado, estado: abonado >= w.monto_cuota ? 'Pagado' : abonado > 0 ? 'Abonado' : 'Deuda' };
@@ -63,7 +65,12 @@ export function exportCSV(status) {
   download(`control-cuotas-3E2-${today()}.csv`, csv, 'text/csv;charset=utf-8;');
 }
 
+function moneyShort(n) {
+  return money(n).replace('MX$', '$');
+}
+
 export function exportPDF(status, balance, session) {
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -89,9 +96,9 @@ export function exportPDF(status, balance, session) {
   doc.text('Resumen financiero', 40, 92);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Total recaudado: ${money(balance.totalRecaudado)}`, 40, 108);
-  doc.text(`Total esperado: ${money(balance.totalEsperado)}`, 220, 108);
-  doc.text(`Deuda pendiente: ${money(balance.totalDeuda)}`, 400, 108);
+  doc.text(`Total recaudado: ${moneyShort(balance.totalRecaudado)}`, 40, 108);
+  doc.text(`Total esperado: ${moneyShort(balance.totalEsperado)}`, 220, 108);
+  doc.text(`Deuda pendiente: ${moneyShort(balance.totalDeuda)}`, 400, 108);
   doc.text(`Cumplimiento: ${balance.porcentajeCobro}%`, 580, 108);
 
   // Tabla principal
@@ -108,13 +115,13 @@ export function exportPDF(status, balance, session) {
     r.m.nombre,
     ...status.weeks.map((w) => {
       const c = r.cells[w.id];
-      return c.abonado > 0 ? money(c.abonado).replace('MX$', '$') : '—';
+      return c.abonado > 0 ? moneyShort(c.abonado) : '—';
     }),
-    money(r.totalAbonado).replace('MX$', '$'),
-    money(r.totalDeuda).replace('MX$', '$')
+    moneyShort(r.totalAbonado),
+    moneyShort(r.totalDeuda)
   ]);
 
-  autoTable(doc, {
+  window.jspdf.autotable(doc, {
     head,
     body,
     startY: 124,
@@ -131,7 +138,7 @@ export function exportPDF(status, balance, session) {
         if (text !== '—' && !text.startsWith('$')) return;
         const value = text === '—' ? 0 : Number(text.replace(/[^0-9.]/g, ''));
         const week = status.weeks[data.column.index - 2];
-        if (value >= week.monto_cuota) data.cell.styles.textColor = [5, 150, 105];
+        if (value >= Number(week.monto_cuota)) data.cell.styles.textColor = [5, 150, 105];
         else if (value > 0) data.cell.styles.textColor = [217, 119, 6];
         else data.cell.styles.textColor = [220, 38, 38];
       }

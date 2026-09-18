@@ -3,11 +3,13 @@
 # Configuración automática de Cloudflare para el Sistema de Cuotas 3E2
 #
 # Crea (si no existen) la base de datos D1 y el proyecto de Pages, inyecta
-# el database_id real en wrangler.toml, aplica el esquema y despliega.
+# el database_id real en wrangler.toml y despliega el sitio estático puro
+# (index.html + css/ + js/ + functions/) sin ningún paso de compilación.
 #
 # Requisitos:
-#   - Node.js 18+
+#   - Node.js 18+  (para wrangler)
 #   - wrangler autenticado:  npx wrangler login
+#   - En Windows usa "Git Bash" o WSL para ejecutar este script
 #
 # Uso:
 #   bash scripts/setup-cloudflare.sh
@@ -61,15 +63,15 @@ echo "    wrangler.toml actualizado."
 echo "==> 4/5 Aplicando esquema a D1 (remoto) y sembrando datos"
 npx wrangler d1 execute "$DB_NAME" --remote --yes --file=./schema.sql
 
-echo "==> 5/5 Compilando y desplegando en Cloudflare Pages"
+echo "==> 5/5 Instalando wrangler y desplegando en Cloudflare Pages"
 npm install
-npm run build
 npx wrangler pages project create "$PROJECT_NAME" --production-branch main 2>/dev/null || true
 echo ""
 echo "IMPORTANTE: configura el secreto de sesión (una sola vez):"
 echo "  npx wrangler pages secret put SESSION_SECRET --project-name $PROJECT_NAME"
 echo ""
-npx wrangler pages deploy dist --project-name "$PROJECT_NAME" --branch main
+npx wrangler pages deploy . --project-name "$PROJECT_NAME" --branch main
 
 echo ""
 echo "Listo. Tu aplicación está desplegada en Cloudflare Pages con D1."
+echo "URL: https://$PROJECT_NAME.pages.dev"
