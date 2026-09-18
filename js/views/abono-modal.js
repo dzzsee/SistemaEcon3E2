@@ -18,7 +18,8 @@ export function openAbonoModal(root, { member, week, status, session, showToast,
   let loading = false;
 
   const presets = () => {
-    const list = [20, 25, 50, Number(week.monto_cuota)];
+    const cuota = Number(week.monto_cuota);
+    const list = [cuota, cuota * 2, cuota * 4, 5, 10, 20];
     if (pendiente > 0 && !list.includes(pendiente)) list.push(pendiente);
     if (currentAbonado > 0 && !list.includes(currentAbonado)) list.push(currentAbonado);
     return [...new Set(list)].sort((a, b) => a - b).slice(0, 6);

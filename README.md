@@ -317,6 +317,8 @@ npx wrangler whoami
 | `npm run dev:cf`                  | Levanta Pages Functions + D1 local (8788)    |
 | `npm run db:migrate:local`        | Aplica `schema.sql` a la D1 local            |
 | `npm run db:migrate:remote`       | Aplica `schema.sql` a la D1 remota           |
+| `npm run db:members:local`        | Reemplaza miembros por la lista real (local) |
+| `npm run db:members:remote`       | Reemplaza miembros por la lista real (remota)|
 | `npm run deploy`                  | Despliega el estático con wrangler           |
 | `bash scripts/setup-cloudflare.sh`| Deploy completo automático (Git Bash/WSL)    |
 | `npx wrangler pages secret put SESSION_SECRET --project-name sistema-econ-3e2` | Configura el secreto de sesión |
@@ -333,6 +335,12 @@ npx wrangler whoami
 | `functions/_lib/db.js` | `MEMBERS_SEED` (auto-seed si la tabla está vacía)  |
 
 Formato: `{ numero_lista, nombre }`. Se muestran en orden ascendente.
+
+> **Lista real 3E2 (2025/2026):** la base ya está poblada con los 32 integrantes
+> (se excluyen los números 9 y 25). Si más adelante necesitas reiniciar la lista,
+> usa `npm run db:members:local` / `db:members:remote`, que limpian la tabla
+> y reinsiertan la lista real desde `migrations/001_real_miembros.sql`.
+> Al editar la lista, actualiza también `schema.sql` y `MEMBERS_SEED`.
 
 ### Credenciales de administradores (usuario / PIN)
 

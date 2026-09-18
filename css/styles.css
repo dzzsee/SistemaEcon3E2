@@ -2236,3 +2236,58 @@ input {
     top: 52px;
   }
 }
+
+/* ---------------- Configuración ---------------- */
+
+.config-hint {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 38px;
+  padding-inline: 1rem;
+  border-radius: 0.5rem;
+  background: rgba(244, 63, 94, 0.14);
+  color: var(--rose-400);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(244, 63, 94, 0.35);
+}
+.btn-danger:hover {
+  background: rgba(244, 63, 94, 0.24);
+}
+.cfg-admin-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.cfg-admin-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.02);
+}
+.cfg-admin-fields {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+.cfg-admin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+@media (min-width: 768px) {
+  .cfg-admin-fields {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

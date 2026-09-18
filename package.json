@@ -8,6 +8,8 @@
     "dev:cf": "wrangler pages dev . --port 8788",
     "db:migrate:local": "wrangler d1 execute sistema-econ-3e2-db --local --file=./schema.sql",
     "db:migrate:remote": "wrangler d1 execute sistema-econ-3e2-db --remote --file=./schema.sql",
+    "db:members:local": "wrangler d1 execute sistema-econ-3e2-db --local --file=./migrations/001_real_miembros.sql",
+    "db:members:remote": "wrangler d1 execute sistema-econ-3e2-db --remote --file=./migrations/001_real_miembros.sql",
     "deploy": "wrangler pages deploy . --project-name sistema-econ-3e2"
   },
   "devDependencies": {

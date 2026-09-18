@@ -104,3 +104,33 @@ export async function createWeek({ fecha_inicio, fecha_fin, monto_cuota, descrip
     body: JSON.stringify({ fecha_inicio, fecha_fin, monto_cuota, descripcion })
   });
 }
+
+// ---------------- CONFIG ----------------
+
+export async function getConfig() {
+  return request('/api/config', { headers: tokenHeader() });
+}
+
+export async function saveConfig(payload) {
+  return request('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...tokenHeader() },
+    body: JSON.stringify({ accion: 'config', ...payload })
+  });
+}
+
+export async function regenerateWeek(payload) {
+  return request('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...tokenHeader() },
+    body: JSON.stringify({ accion: 'semana', ...payload })
+  });
+}
+
+export async function updateAdmin(payload) {
+  return request('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...tokenHeader() },
+    body: JSON.stringify({ accion: 'usuario', ...payload })
+  });
+}

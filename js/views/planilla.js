@@ -112,7 +112,7 @@ export function renderPlanilla(
                               <button class="cell-badge ${est.cls} ${selected ? 'cell-selected' : ''}" 
                                 data-cell-week="${w.id}" data-cell-member="${m.numero_lista}"
                                 title="${esc(m.nombre)} · ${weekLabel(w)}">
-                                ${cell.abonado > 0 ? money(cell.abonado).replace('MX$', '$') : '·'}
+                                ${cell.abonado > 0 ? money(cell.abonado) : '·'}
                               </button>
                             </td>`;
                         })

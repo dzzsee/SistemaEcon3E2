@@ -4,12 +4,6 @@
 
 import { iconHtml } from '../utils.js';
 
-const QUICK = [
-  { rol: 'tutor', usuario: 'tutor', pin: '1234', label: 'Tutor(a)' },
-  { rol: 'presidente', usuario: 'presidente', pin: '2345', label: 'Presidente' },
-  { rol: 'tesorero', usuario: 'tesorero', pin: '3456', label: 'Tesorero' }
-];
-
 export function renderLogin(root, { onLogin }) {
   root.className = 'app-root';
   root.innerHTML = `
@@ -50,20 +44,6 @@ export function renderLogin(root, { onLogin }) {
             <span>Entrar al sistema</span>
           </button>
         </form>
-
-        <div class="quick-card">
-          <div class="quick-heading">
-            ${iconHtml('feather')}
-            <span>Acceso rápido (demo)</span>
-          </div>
-          <div class="quick-grid">
-            ${QUICK.map(
-              (q) =>
-                `<button type="button" class="quick-btn" data-usuario="${q.usuario}" data-pin="${q.pin}">${q.label}</button>`
-            ).join('')}
-          </div>
-          <div class="mode-hint">${iconHtml('cloud')} Conexión Cloudflare D1 detectada automáticamente</div>
-        </div>
 
         <p class="login-footer">Solo el tutor, presidente y tesorero tienen acceso</p>
       </div>
@@ -115,15 +95,6 @@ export function renderLogin(root, { onLogin }) {
   root.querySelector('#login-form').addEventListener('submit', handleSubmit);
   userInput.addEventListener('input', validate);
   pinInput.addEventListener('input', validate);
-
-  root.querySelectorAll('.quick-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      userInput.value = btn.dataset.usuario;
-      pinInput.value = btn.dataset.pin;
-      userInput.dispatchEvent(new Event('input'));
-      pinInput.dispatchEvent(new Event('input'));
-    });
-  });
 
   validate();
   pinInput.focus();

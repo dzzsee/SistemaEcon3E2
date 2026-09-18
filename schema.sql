@@ -9,6 +9,11 @@ CREATE TABLE IF NOT EXISTS administradores (
     rol TEXT NOT NULL CHECK(rol IN ('tutor', 'presidente', 'tesorero'))
 );
 
+CREATE TABLE IF NOT EXISTS configuracion (
+    clave TEXT PRIMARY KEY,
+    valor TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS miembros (
     numero_lista INTEGER PRIMARY KEY,
     nombre TEXT NOT NULL,
@@ -20,7 +25,7 @@ CREATE TABLE IF NOT EXISTS semanas (
     numero_semana INTEGER NOT NULL,
     fecha_inicio TEXT NOT NULL, -- ISO date YYYY-MM-DD (Lunes)
     fecha_fin TEXT NOT NULL,    -- ISO date YYYY-MM-DD (Domingo)
-    monto_cuota REAL NOT NULL DEFAULT 20.00,
+    monto_cuota REAL NOT NULL DEFAULT 2.50,
     descripcion TEXT
 );
 
@@ -39,31 +44,48 @@ CREATE TABLE IF NOT EXISTS abonos (
 CREATE INDEX IF NOT EXISTS idx_abonos_miembro ON abonos(miembro_id);
 CREATE INDEX IF NOT EXISTS idx_abonos_semana ON abonos(semana_id);
 
+-- Semilla de Configuración (cuota semanal $2.50, periodo lectivo oct → mayo)
+INSERT OR IGNORE INTO configuracion (clave, valor) VALUES
+('cuota_semanal', '2.50');
+
 -- Semilla de Administradores (Tutor, Presidente, Tesorero)
 INSERT OR IGNORE INTO administradores (id, usuario, pin, nombre, rol) VALUES
-(1, 'tutor', '1234', 'Profesor Tutor', 'tutor'),
-(2, 'presidente', '2345', 'Presidente de Grupo', 'presidente'),
-(3, 'tesorero', '3456', 'Tesorero de Grupo', 'tesorero');
+(1, 'tutor3E2', 'TuToRTeRcE2', 'Profesor Tutor', 'tutor'),
+(2, 'presidente3E2', 'PrEsIdEnTeTeRcE2', 'Presidente de Grupo', 'presidente'),
+(3, 'tesorero3E2', 'TeSoReRoTeRcE2', 'Tesorero de Grupo', 'tesorero');
 
--- Semilla de Miembros de 3E2 (Lista fija ordenada por número de lista)
+-- Semilla de Miembros de 3E2 (Lista real BACH Informática 2º E2, 2025/2026)
+-- Excluidos: #9 CARCHIPULLA MOROCHO CRISTOPHER ALEXIS y #25 PAVON PEÑA ANIBAL SEBASTIAN
 INSERT OR IGNORE INTO miembros (numero_lista, nombre) VALUES
-(1, 'Álvarez Mendoza Diego'),
-(2, 'Benítez Castro Sofía'),
-(3, 'Cabrera Romero Alejandro'),
-(4, 'Delgado Morales Valentina'),
-(5, 'Espinoza Ramos Mateo'),
-(6, 'Flores Herrera Camila'),
-(7, 'García López Daniel'),
-(8, 'Hernández Castillo Valeria'),
-(9, 'Ibarra Silva Sebastián'),
-(10, 'Jiménez Ortiz Natalia'),
-(11, 'Lara Méndez Emiliano'),
-(12, 'Martínez Cruz Isabella'),
-(13, 'Navarro Reyes Leonardo'),
-(14, 'Orozco Torres Ximena'),
-(15, 'Pérez Gómez Gabriel'),
-(16, 'Quintana Domínguez Romina'),
-(17, 'Ramírez Vega Santiago'),
-(18, 'Sánchez Fuentes Victoria'),
-(19, 'Torres Medina Samuel'),
-(20, 'Vázquez Ruiz Mariana');
+(1, 'Abad Gómez Carlos René'),
+(2, 'Abad Paucar David Israel'),
+(3, 'Abril Idrovo Pablo Andrés'),
+(4, 'Álava Cabrera Mateo Alexander'),
+(5, 'Armijos Loja María Fernanda'),
+(6, 'Barros Valladares Jordán Martín'),
+(7, 'Bravo Vázquez David Andrés'),
+(8, 'Bustamante Guzmán Kevin Andrés'),
+(10, 'Castillo Muñoz Ana Paula'),
+(11, 'Cedillo Guaicha Diego Sebastián'),
+(12, 'Contreras Peralta Samantha Belén'),
+(13, 'Durán Ordóñez Angélica Cristina'),
+(14, 'Espinosa Salazar Anthony Alexander'),
+(15, 'Gallegos Tenecota Amy Samantha'),
+(16, 'Guamán Matute Jonnathan Javier'),
+(17, 'Inga Yunga Michael Eduardo'),
+(18, 'Lojano Chapa Evelyn Dayanna'),
+(19, 'Lucero Lazo Mateo Ismael'),
+(20, 'Matute Esparza Andrés Ismael'),
+(21, 'Maza Quito Marco Gabriel'),
+(22, 'Mejía Zhañay Bruno Damián'),
+(23, 'Neira Maldonado Juan José'),
+(24, 'Ortiz Terán William Ariel'),
+(26, 'Peña Morocho Marco Daniel'),
+(27, 'Pérez Cobos Mailén Sofía'),
+(28, 'Pesantez Sosa Daniela Alejandra'),
+(29, 'Pintado Pillco Christopher Rubén'),
+(30, 'Quijije Ulloa Santiago'),
+(31, 'Sarmiento Cabrera Axel Josué'),
+(32, 'Sibri Simbaña Marco Andrés'),
+(33, 'Sinche Guamán Cameron Scarleth'),
+(34, 'Tipantaxi Cazorla Christian Andrés');

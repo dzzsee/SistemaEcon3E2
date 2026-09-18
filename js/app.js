@@ -10,6 +10,7 @@ import { renderPlanilla } from './views/planilla.js';
 import { openAbonoModal } from './views/abono-modal.js';
 import { renderAlumnos } from './views/alumnos.js';
 import { renderExportar } from './views/exportar.js';
+import { renderConfiguracion } from './views/configuracion.js';
 
 const appRoot = document.querySelector('#app');
 const modalRoot = document.querySelector('#modal-root');
@@ -19,7 +20,8 @@ const TABS = [
   { id: 'resumen', label: 'Resumen', icon: 'dashboard' },
   { id: 'planilla', label: 'Planilla', icon: 'table' },
   { id: 'alumnos', label: 'Alumnos', icon: 'users' },
-  { id: 'exportar', label: 'Exportar', icon: 'export' }
+  { id: 'exportar', label: 'Exportar', icon: 'export' },
+  { id: 'configuracion', label: 'Configurar', icon: 'settings' }
 ];
 
 const state = {
@@ -245,6 +247,9 @@ function renderTab() {
       break;
     case 'exportar':
       renderExportar(content, ctx);
+      break;
+    case 'configuracion':
+      renderConfiguracion(content, ctx);
       break;
   }
 }

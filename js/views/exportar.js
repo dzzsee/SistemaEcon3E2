@@ -67,7 +67,7 @@ export function renderExportar(parent, { status, balance, session, showToast, on
               </div>
               <div>
                 <label class="field-label" style="text-transform:uppercase;font-size:0.625rem;">Cuota</label>
-                <input class="input-plain" type="number" name="monto" min="1" step="0.5" value="20" required />
+                <input class="input-plain" type="number" name="monto" min="1" step="0.5" value="2.5" required />
               </div>
               <div class="submit-cell">
                 <div class="flex-1">

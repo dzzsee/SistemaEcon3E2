@@ -66,7 +66,7 @@ export function exportCSV(status) {
 }
 
 function moneyShort(n) {
-  return money(n).replace('MX$', '$');
+  return money(n);
 }
 
 export function exportPDF(status, balance, session) {

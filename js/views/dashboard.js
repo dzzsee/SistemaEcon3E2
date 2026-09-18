@@ -86,14 +86,14 @@ export function renderDashboard(parent, { status, balance, session, onNavigate }
           icon: 'alert',
           label: 'En deuda',
           value: money(balance.totalDeuda),
-          sub: `${balance.totalAlumnos} integrantes · ${balance.totalSemanas} semanas`,
+          sub: `según ${balance.semanasCursadas} semanas cursadas · ${balance.totalAlumnos} integrantes`,
           accentClass: 'stat-rose'
         })}
         ${statCard({
           icon: 'trending',
           label: 'Porcentaje cobrado',
           value: `${pct}%`,
-          sub: 'del total proyectado',
+          sub: 'de las semanas cursadas',
           accentClass: 'stat-teal'
         })}
         ${statCard({
