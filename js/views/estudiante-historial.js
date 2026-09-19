@@ -7,7 +7,11 @@ import { money, weekLabel, estadoInfo, iconHtml, esc } from '../utils.js';
 export function renderEstudianteHistorial(parent, { status, balance, session, showToast, refresh, onNavigate }) {
   const miembroId = session.id;
 
-  const weekRows = status.weeks.map((w) => {
+  // Solo semanas ya cursadas (fecha_fin <= hoy)
+  const today = new Date().toISOString().slice(0, 10);
+  const semanasCursadas = status.weeks.filter((w) => w.fecha_fin <= today);
+
+  const weekRows = semanasCursadas.map((w) => {
     const key = `${miembroId}-${w.id}`;
     const g = status.grouped ? status.grouped[key] : null;
     const abonado = g ? Number(g.total) : 0;

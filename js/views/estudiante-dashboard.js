@@ -57,6 +57,10 @@ export function renderEstudianteDashboard(parent, { status, balance, session, sh
   const miembroId = session.id;
   const firstName = esc((session.nombre || 'Estudiante').split(' ')[0]);
 
+  // Solo semanas ya cursadas (fecha_fin <= hoy)
+  const today = new Date().toISOString().slice(0, 10);
+  const semanasCursadas = status.weeks.filter((w) => w.fecha_fin <= today);
+
   // Calcular estadísticas personales
   let totalAbonado = 0;
   let totalDeuda = 0;
@@ -65,7 +69,7 @@ export function renderEstudianteDashboard(parent, { status, balance, session, sh
 
   const weeksWithDebt = [];
 
-  for (const w of status.weeks) {
+  for (const w of semanasCursadas) {
     const key = `${miembroId}-${w.id}`;
     const g = status.grouped ? status.grouped[key] : null;
     const abonado = g ? Number(g.total) : 0;
@@ -84,7 +88,7 @@ export function renderEstudianteDashboard(parent, { status, balance, session, sh
     }
   }
 
-  const totalSemanas = status.weeks.length;
+  const totalSemanas = semanasCursadas.length;
   const porcentaje = totalSemanas > 0 ? Math.round((semanasPagadas / totalSemanas) * 100) : 0;
 
   parent.innerHTML = `
