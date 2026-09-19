@@ -1,10 +1,10 @@
 import { ensureSchema, json, getBody } from '../_lib/db.js';
-import { getAdminFromRequest } from '../_lib/auth.js';
+import { getUserFromRequest } from '../_lib/auth.js';
 
-// POST /api/payments - registra un abono de un miembro en una semana (requiere auth)
+// POST /api/payments - registra un abono de un miembro en una semana (requiere auth admin)
 export async function onRequestPost(context) {
-  const admin = await getAdminFromRequest(context.request, context.env);
-  if (!admin) {
+  const user = await getUserFromRequest(context.request, context.env);
+  if (!user || user.tipo !== 'admin') {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
   }
 
@@ -26,7 +26,7 @@ export async function onRequestPost(context) {
     `INSERT INTO abonos (miembro_id, semana_id, monto, registrado_por, nota)
      VALUES (?, ?, ?, ?, ?)`
   )
-    .bind(Number(miembro_id), Number(semana_id), montoNum, admin.nombre, nota || '')
+    .bind(Number(miembro_id), Number(semana_id), montoNum, user.nombre, nota || '')
     .run();
 
   // Retornar el total abonado acumulado del miembro en la semana
@@ -50,10 +50,10 @@ export async function onRequestPost(context) {
   });
 }
 
-// GET /api/payments - historial completo de abonos (requiere auth)
+// GET /api/payments - historial completo de abonos (requiere auth admin)
 export async function onRequestGet(context) {
-  const admin = await getAdminFromRequest(context.request, context.env);
-  if (!admin) {
+  const user = await getUserFromRequest(context.request, context.env);
+  if (!user || user.tipo !== 'admin') {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
   }
 

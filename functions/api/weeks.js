@@ -1,7 +1,7 @@
 import { ensureSchema, json, getBody } from '../_lib/db.js';
-import { getAdminFromRequest } from '../_lib/auth.js';
+import { getUserFromRequest } from '../_lib/auth.js';
 
-// GET /api/weeks - lista de semanas de calendario
+// GET /api/weeks - lista de semanas de calendario (público para estudiantes, admin para POST)
 export async function onRequestGet(context) {
   await ensureSchema(context.env.DB);
   const { results } = await context.env.DB.prepare(
@@ -10,10 +10,10 @@ export async function onRequestGet(context) {
   return json(results);
 }
 
-// POST /api/weeks - crea una nueva semana (requiere auth)
+// POST /api/weeks - crea una nueva semana (requiere auth admin)
 export async function onRequestPost(context) {
-  const admin = await getAdminFromRequest(context.request, context.env);
-  if (!admin) {
+  const user = await getUserFromRequest(context.request, context.env);
+  if (!user || user.tipo !== 'admin') {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
   }
 

@@ -50,12 +50,17 @@ async function request(path, options = {}) {
 
 // ---------------- AUTH ----------------
 
-export async function login(usuario, pin) {
+export async function login({ usuario, pin, cedula }) {
   try {
+    const body = {};
+    if (usuario) body.usuario = usuario;
+    if (pin) body.pin = pin;
+    if (cedula) body.cedula = cedula;
+
     const data = await request('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario, pin })
+      body: JSON.stringify(body)
     });
     if (data.success) {
       setSession(data.user, data.token);
@@ -63,7 +68,7 @@ export async function login(usuario, pin) {
     }
     return data;
   } catch (err) {
-    if (err.message === 'no-auth') return { success: false, message: 'Credenciales inválidas. Verifica tu usuario y PIN.' };
+    if (err.message === 'no-auth') return { success: false, message: 'Credenciales inválidas. Verifica tus datos.' };
     throw err;
   }
 }

@@ -1,24 +1,42 @@
 import { ensureSchema, json } from '../_lib/db.js';
-import { getAdminFromRequest } from '../_lib/auth.js';
+import { getUserFromRequest } from '../_lib/auth.js';
 
 // GET /api/status - estado completo (miembros + semanas + abonos) para renderizar la planilla
 export async function onRequestGet(context) {
-  const admin = await getAdminFromRequest(context.request, context.env);
-  if (!admin) {
+  const user = await getUserFromRequest(context.request, context.env);
+  if (!user) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
   }
 
   await ensureSchema(context.env.DB);
 
-  const members = await context.env.DB.prepare(
-    'SELECT m.numero_lista, m.nombre FROM miembros m ORDER BY m.numero_lista'
-  ).all();
+  const isEstudiante = user.tipo === 'estudiante';
+  const miembroId = isEstudiante ? user.id : null;
+
+  let members;
+  if (isEstudiante) {
+    members = await context.env.DB.prepare(
+      'SELECT m.numero_lista, m.nombre FROM miembros m WHERE m.numero_lista = ? AND m.activo = 1'
+    ).bind(miembroId).all();
+  } else {
+    members = await context.env.DB.prepare(
+      'SELECT m.numero_lista, m.nombre FROM miembros m ORDER BY m.numero_lista'
+    ).all();
+  }
+
   const weeks = await context.env.DB.prepare(
     'SELECT id, numero_semana, fecha_inicio, fecha_fin, monto_cuota, descripcion FROM semanas ORDER BY fecha_inicio'
   ).all();
-  const abonos = await context.env.DB.prepare(
-    'SELECT id, miembro_id, semana_id, monto, fecha_registro, registrado_por FROM abonos ORDER BY semana_id, miembro_id'
-  ).all();
+
+  let abonosQuery = 'SELECT id, miembro_id, semana_id, monto, fecha_registro, registrado_por FROM abonos ORDER BY semana_id, miembro_id';
+  let abonos;
+  if (isEstudiante) {
+    abonos = await context.env.DB.prepare(
+      'SELECT id, miembro_id, semana_id, monto, fecha_registro, registrado_por FROM abonos WHERE miembro_id = ? ORDER BY semana_id'
+    ).bind(miembroId).all();
+  } else {
+    abonos = await context.env.DB.prepare(abonosQuery).all();
+  }
 
   const grouped = {};
   for (const a of abonos.results) {

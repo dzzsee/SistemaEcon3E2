@@ -1,4 +1,4 @@
-// Autenticación ligera para los 3 administradores (Tutor, Presidente, Tesorero)
+// Autenticación ligera para administradores y estudiantes
 // Usa tokens con firma HMAC-SHA256 (Web Crypto, disponible en Workers).
 
 const SECRET_KEY = 'SESSION_SECRET';
@@ -44,9 +44,23 @@ export async function verifyToken(token, secret) {
   }
 }
 
-// Middleware de autenticación: extrae el admin desde el header Authorization
-export function getAdminFromRequest(request, env) {
+// Middleware de autenticación: extrae el usuario (admin o estudiante) desde el header Authorization
+export async function getUserFromRequest(request, env) {
   const authHeader = request.headers.get('Authorization') || '';
   const token = authHeader.replace('Bearer ', '');
   return verifyToken(token, env[SECRET_KEY] || 'econ-3e2-session-secret');
+}
+
+// Helper para compatibilidad: solo admins
+export function getAdminFromRequest(request, env) {
+  const user = getUserFromRequest(request, env);
+  if (!user || user.tipo !== 'admin') return null;
+  return user;
+}
+
+// Helper para estudiantes
+export function getEstudianteFromRequest(request, env) {
+  const user = getUserFromRequest(request, env);
+  if (!user || user.tipo !== 'estudiante') return null;
+  return user;
 }

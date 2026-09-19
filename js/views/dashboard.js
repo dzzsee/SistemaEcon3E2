@@ -1,5 +1,5 @@
 // ================================================================
-// Vista: Resumen (dashboard)
+// Vista: Resumen (dashboard) - Administración
 // ================================================================
 
 import { money, weekLabel, iconHtml, esc } from '../utils.js';
@@ -39,6 +39,11 @@ function weekCard(week, status, onClick) {
   const total = money(recaudado);
   const esperado = money(Number(week.monto_cuota) * members.length);
 
+  // Si todos pagaron (pagados === total miembros), no mostrar la tarjeta
+  if (pagados === members.length && members.length > 0) {
+    return '';
+  }
+
   return `
     <button class="glass-card glass-card-hover week-card" data-week="${week.id}">
       <div class="week-card-head">
@@ -67,11 +72,37 @@ export function renderDashboard(parent, { status, balance, session, onNavigate }
   const pct = balance.porcentajeCobro;
   const firstName = esc((session.nombre || 'Usuario').split(' ')[0]);
 
+  // Filtrar semanas: mostrar desde septiembre a mayo (periodo lectivo)
+  // Y ocultar semanas donde todos han pagado (pagados === total miembros)
+  const allWeeks = [...status.weeks].sort((a, b) => a.numero_semana - b.numero_semana);
+  const membersCount = status.members.length;
+
+  const weeksToShow = allWeeks.filter((week) => {
+    // Verificar si la semana está completamente pagada
+    let pagados = 0;
+    for (const m of status.members) {
+      const key = `${m.numero_lista}-${week.id}`;
+      const g = status.grouped ? status.grouped[key] : null;
+      const abonado = g ? Number(g.total) : 0;
+      if (abonado >= Number(week.monto_cuota)) pagados++;
+    }
+    // Mostrar si NO está completamente pagada (tienen deuda o abonos parciales)
+    return pagados < membersCount;
+  });
+
+  // Tomar las últimas 6 semanas con deuda/pendientes, o todas si son menos de 6
+  const recentWeeks = weeksToShow.slice(-6).reverse();
+
   parent.innerHTML = `
     <div class="space-y-6">
-      <div class="anim-fadeUp">
-        <h1 class="page-head-title" style="font-size:1.25rem;">Hola, ${firstName} 👋</h1>
-        <p class="page-head-sub">Este es el estado financiero del grupo 3E2.</p>
+      <div class="anim-fadeUp flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 class="page-head-title" style="font-size:1.25rem;">Hola, ${firstName} 👋</h1>
+          <p class="page-head-sub">Estado financiero del grupo 3E2 — Periodo Septiembre–Mayo</p>
+        </div>
+        <button class="btn-teal" data-nav-estudiante>
+          ${iconHtml('user')} Acceder a consulta
+        </button>
       </div>
 
       <div class="stat-grid">
@@ -119,15 +150,17 @@ export function renderDashboard(parent, { status, balance, session, onNavigate }
 
       <div class="space-y-4">
         <div class="section-head">
-          <h2 class="section-title">${iconHtml('users')} Progreso semanal</h2>
-          <a href="#" class="link-emerald" data-nav="planilla">Ver planilla →</a>
+          <h2 class="section-title">${iconHtml('users')} Progreso semanal (semanas con pagos pendientes)</h2>
+          <a href="#" class="link-emerald" data-nav="planilla">Ver planilla completa →</a>
         </div>
         <div class="week-grid">
-          ${[...status.weeks]
-            .slice(-6)
-            .reverse()
-            .map((w) => weekCard(w, status))
-            .join('')}
+          ${recentWeeks.length > 0
+            ? recentWeeks.map((w) => weekCard(w, status)).join('')
+            : `<div class="glass-card text-center py-8" style="grid-column: 1 / -1;">
+                 ${iconHtml('checkCircle', 'text-emerald-400')}
+                 <p class="mt-2" style="color:var(--text-2);">¡Todas las semanas están completamente pagadas! 🎉</p>
+               </div>`
+          }
         </div>
       </div>
     </div>
@@ -137,6 +170,14 @@ export function renderDashboard(parent, { status, balance, session, onNavigate }
     el.addEventListener('click', (e) => {
       e.preventDefault();
       onNavigate(el.dataset.nav);
+    });
+  });
+
+  parent.querySelectorAll('[data-nav-estudiante]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Navegar a la vista de estudiante
+      window.location.href = '/estudiante';
     });
   });
 
