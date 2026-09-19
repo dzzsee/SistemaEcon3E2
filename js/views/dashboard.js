@@ -90,8 +90,8 @@ export function renderDashboard(parent, { status, balance, session, onNavigate }
     return pagados < membersCount;
   });
 
-  // Tomar las últimas 6 semanas con deuda/pendientes, o todas si son menos de 6
-  const recentWeeks = weeksToShow.slice(-6).reverse();
+  // Mostrar todas las semanas pendientes desde el inicio del periodo configurado
+  const recentWeeks = weeksToShow;
 
   parent.innerHTML = `
     <div class="space-y-6">

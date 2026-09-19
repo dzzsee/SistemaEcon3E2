@@ -102,6 +102,14 @@ export async function addAbono({ miembro_id, semana_id, monto, nota }) {
   });
 }
 
+export async function deleteAbonos({ miembro_id, semana_id }) {
+  return request('/api/payments', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...tokenHeader() },
+    body: JSON.stringify({ miembro_id, semana_id })
+  });
+}
+
 export async function createWeek({ fecha_inicio, fecha_fin, monto_cuota, descripcion }) {
   return request('/api/weeks', {
     method: 'POST',

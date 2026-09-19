@@ -55,12 +55,12 @@ export function renderConfiguracion(parent, { showToast, refresh }) {
             </div>
             <div class="submit-cell">
               <div class="flex-1">
-                <button type="button" class="btn-danger" data-regenerate>${iconHtml('calendarPlus')} Regenerar semanas (borra abonos)</button>
+                <button type="button" class="btn-danger" data-regenerate>${iconHtml('calendarPlus')} Regenerar semanas</button>
               </div>
               <button type="submit" class="btn-submit-teal" data-save-config>${iconHtml('check')} Guardar</button>
             </div>
           </form>
-          <p class="config-hint">Guardar actualiza la cuota y el periodo. "Regenerar semanas" reconstruye el calendario completo y elimina los abonos existentes.</p>
+          <p class="config-hint">Guardar actualiza la cuota y el periodo. "Regenerar semanas" reconstruye el calendario y conserva los abonos que siguen dentro del nuevo periodo.</p>
         </div>
 
         <!-- Usuarios -->
@@ -128,7 +128,7 @@ export function renderConfiguracion(parent, { showToast, refresh }) {
   }
 
   async function onRegenerate() {
-    if (!confirm('¿Reconstruir todas las semanas del periodo? Se eliminarán todos los abonos registrados.')) return;
+    if (!confirm('¿Reconstruir todas las semanas del periodo? Se conservarán los abonos que sigan dentro del nuevo periodo.')) return;
     const form = parent.querySelector('#config-form');
     const data = new FormData(form);
     const payload = {

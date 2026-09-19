@@ -1,10 +1,10 @@
 -- Migración: Autenticación de estudiantes (cédula + PIN)
 -- Añadir columnas a la tabla miembros
-ALTER TABLE miembros ADD COLUMN cedula TEXT UNIQUE;
+ALTER TABLE miembros ADD COLUMN cedula TEXT;
 ALTER TABLE miembros ADD COLUMN pin TEXT NOT NULL DEFAULT '0000';
 
 -- Índice para login rápido por cédula
-CREATE INDEX IF NOT EXISTS idx_miembros_cedula ON miembros(cedula);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_miembros_cedula ON miembros(cedula) WHERE cedula IS NOT NULL;
 
 -- Actualizar 3 miembros de prueba con cédula y PIN
 -- Miembro #1: Abad Gómez Carlos René

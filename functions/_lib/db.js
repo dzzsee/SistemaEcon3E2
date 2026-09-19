@@ -247,21 +247,25 @@ export async function regenerateWeeks(db, { monto_cuota, fecha_inicio, fecha_fin
   // Elimina semanas fuera del nuevo periodo junto con sus abonos
   const removed = await contextLikeDelete(db, weeks, inicio, fin);
 
-  // Inserta semanas nuevas (las que no existen aún por fecha de inicio)
+  // Renumera e inserta las semanas según el nuevo inicio del periodo.
   for (const w of weeks) {
-    const exists = await db
-      .prepare('SELECT 1 as one FROM semanas WHERE fecha_inicio = ?')
+    const existing = await db
+      .prepare('SELECT id FROM semanas WHERE fecha_inicio = ?')
       .bind(w.fecha_inicio)
       .first();
-    if (!exists) {
-      const maxRow = await db
-        .prepare('SELECT COALESCE(MAX(numero_semana), 0) as max_num FROM semanas')
-        .first();
+    if (existing) {
+      await db
+        .prepare(
+          'UPDATE semanas SET numero_semana = ?, fecha_fin = ?, monto_cuota = ?, descripcion = ? WHERE id = ?'
+        )
+        .bind(w.numero_semana, w.fecha_fin, w.monto_cuota, w.descripcion, existing.id)
+        .run();
+    } else {
       await db
         .prepare(
           'INSERT INTO semanas (numero_semana, fecha_inicio, fecha_fin, monto_cuota, descripcion) VALUES (?, ?, ?, ?, ?)'
         )
-        .bind(Number(maxRow.max_num) + 1, w.fecha_inicio, w.fecha_fin, w.monto_cuota, w.descripcion)
+        .bind(w.numero_semana, w.fecha_inicio, w.fecha_fin, w.monto_cuota, w.descripcion)
         .run();
     }
   }

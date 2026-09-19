@@ -4,6 +4,11 @@
 
 import { money, weekLabel, estadoInfo, computeEstado, buildMatrix, iconHtml, esc } from '../utils.js';
 
+function shortDate(date) {
+  const [year, month, day] = date.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 export function renderPlanilla(
   parent,
   { status, balance, selectedWeekId, onSelectWeek, openAbono, refresh, session, showToast }
@@ -15,6 +20,7 @@ export function renderPlanilla(
   }
 
   const selectedWeek = weeks.find((w) => w.id === selectedWeekId) || weeks[weeks.length - 1];
+  const displayWeeks = [selectedWeek];
   const matrix = buildMatrix(status);
 
   // Resumen de la semana seleccionada
@@ -37,6 +43,10 @@ export function renderPlanilla(
     <div class="space-y-5">
       <div class="week-selector">
         <button class="sel-arrow" data-arrow="-1" aria-label="Semana anterior">${iconHtml('chevronLeft')}</button>
+        <div class="week-current" aria-live="polite">
+          <strong>Semana ${selectedWeek.numero_semana}</strong>
+          <span>${shortDate(selectedWeek.fecha_inicio)} - ${shortDate(selectedWeek.fecha_fin)}</span>
+        </div>
         <div class="week-pills no-scrollbar">
           ${weeks
             .map(
@@ -83,14 +93,12 @@ export function renderPlanilla(
               <tr>
                 <th class="sticky-col">#</th>
                 <th class="sticky-col sticky-col-name">Integrante</th>
-                <th style="text-align:center;padding-inline:0.75rem;">Anticipado</th>
-                ${weeks
+                ${displayWeeks
                   .map(
                     (w) =>
                       `<th style="text-align:center;">Sem ${w.numero_semana}<span class="th-date">${w.fecha_inicio.slice(5, 10)}</span></th>`
                   )
                   .join('')}
-                <th style="text-align:center;padding-inline:0.75rem;">Total abonado</th>
               </tr>
             </thead>
             <tbody>
@@ -101,15 +109,13 @@ export function renderPlanilla(
                     <tr>
                       <td class="sticky-col num-cell">${m.numero_lista}</td>
                       <td class="sticky-col-name">${esc(m.nombre)}</td>
-                      <td style="text-align:center;padding-inline:0.75rem;;font-size:0.75rem;color:var(--text-2);">${money(row.total_abonado)}</td>
-                      ${weeks
+                      ${displayWeeks
                         .map((w) => {
                           const cell = row.cells[w.id];
                           const est = estadoInfo(cell.estado);
-                          const selected = w.id === selectedWeek.id;
                           return `
                             <td>
-                              <button class="cell-badge ${est.cls} ${selected ? 'cell-selected' : ''}" 
+                              <button class="cell-badge ${est.cls} cell-selected" 
                                 data-cell-week="${w.id}" data-cell-member="${m.numero_lista}"
                                 title="${esc(m.nombre)} · ${weekLabel(w)}">
                                 ${cell.abonado > 0 ? money(cell.abonado) : '·'}
@@ -117,7 +123,6 @@ export function renderPlanilla(
                             </td>`;
                         })
                         .join('')}
-                      <td class="total-cell">${money(row.total_abonado)}</td>
                     </tr>`;
                 })
                 .join('')}

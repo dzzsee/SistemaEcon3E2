@@ -17,6 +17,16 @@ import { renderEstudianteHistorial } from './views/estudiante-historial.js';
 const appRoot = document.querySelector('#app');
 const modalRoot = document.querySelector('#modal-root');
 const toastRoot = document.querySelector('#toast-root');
+const SELECTED_WEEK_KEY = '3e2_selected_week';
+const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+
+function localDateISO() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // Rutas de la aplicación
 const ROUTES = {
@@ -57,6 +67,35 @@ const state = {
 };
 
 let toastTimer = null;
+let inactivityTimer = null;
+let lastActivityAt = 0;
+
+function clearInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = null;
+}
+
+function resetInactivityTimer() {
+  if (!api.getSession()) {
+    clearInactivityTimer();
+    return;
+  }
+
+  lastActivityAt = Date.now();
+  clearInactivityTimer();
+  inactivityTimer = setTimeout(() => {
+    const inactiveFor = Date.now() - lastActivityAt;
+    if (inactiveFor >= INACTIVITY_TIMEOUT_MS && api.getSession()) {
+      void handleLogout('Sesión cerrada por 15 minutos de inactividad.');
+      return;
+    }
+    resetInactivityTimer();
+  }, INACTIVITY_TIMEOUT_MS);
+}
+
+['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach((eventName) => {
+  window.addEventListener(eventName, resetInactivityTimer, { passive: true });
+});
 
 // ---------------- Toast ----------------
 
@@ -85,6 +124,7 @@ function getRoute(path) {
 function navigate(path) {
   const route = getRoute(path);
   const session = api.getSession();
+  state.session = session;
 
   // Verificar autenticación
   if (!route.public && !session) {
@@ -100,6 +140,10 @@ function navigate(path) {
   }
 
   state.route = path;
+  if (route.tab) {
+    if (session.tipo === 'admin') state.adminTab = route.tab;
+    else state.estudianteTab = route.tab;
+  }
   window.history.pushState({}, '', path);
   renderApp();
 }
@@ -129,6 +173,8 @@ async function boot() {
     return;
   }
 
+  resetInactivityTimer();
+
   // Si hay sesión pero está en login, redirigir
   if (currentPath === '/login') {
     navigate(session.tipo === 'admin' ? '/admin' : '/estudiante');
@@ -154,6 +200,7 @@ async function handleLogin(credentials) {
   const res = await api.login(credentials);
   if (res.success) {
     state.session = res.user;
+    resetInactivityTimer();
     modalRoot.innerHTML = '';
     toastRoot.innerHTML = '';
     showToast(`Bienvenido, ${res.user.nombre}.`);
@@ -164,7 +211,8 @@ async function handleLogin(credentials) {
   return res;
 }
 
-async function handleLogout() {
+async function handleLogout(message = '') {
+  clearInactivityTimer();
   api.logout();
   state.session = null;
   state.status = null;
@@ -175,6 +223,7 @@ async function handleLogout() {
   modalRoot.innerHTML = '';
   toastRoot.innerHTML = '';
   navigate('/login');
+  if (message) showToast(message, 'error');
 }
 
 // ---------------- Datos ----------------
@@ -186,7 +235,16 @@ async function loadData() {
     state.status = status;
     state.balance = balance;
     if (!state.selectedWeekId && status.weeks.length) {
-      state.selectedWeekId = status.weeks[status.weeks.length - 1].id;
+      const today = localDateISO();
+      const currentWeek = status.weeks.find(
+        (week) => week.fecha_inicio <= today && week.fecha_fin >= today
+      );
+      const savedWeekId = Number(localStorage.getItem(SELECTED_WEEK_KEY));
+      const savedWeek = status.weeks.find((week) => week.id === savedWeekId);
+      const mobile = window.matchMedia('(max-width: 639px)').matches;
+      state.selectedWeekId = mobile
+        ? currentWeek?.id || savedWeek?.id || status.weeks[status.weeks.length - 1].id
+        : savedWeek?.id || currentWeek?.id || status.weeks[status.weeks.length - 1].id;
     }
   } catch (err) {
     if (err && err.message === 'no-auth') {
@@ -216,10 +274,12 @@ function renderApp() {
   }
 
   if (state.session.tipo === 'admin') {
-    renderAdminShell();
+    if (appRoot.dataset.shell !== 'admin') renderAdminShell();
+    else renderAdminTabbar();
     renderAdminTab();
   } else {
-    renderEstudianteShell();
+    if (appRoot.dataset.shell !== 'estudiante') renderEstudianteShell();
+    else renderEstudianteTabbar();
     renderEstudianteTab();
   }
 }
@@ -229,6 +289,7 @@ function renderApp() {
 function renderAdminShell() {
   const info = rolLabel(state.session.rol);
   appRoot.className = 'app-root';
+  appRoot.dataset.shell = 'admin';
   appRoot.innerHTML = `
     <div class="bg-decor">
       <div class="blob blob-1"></div>
@@ -319,7 +380,11 @@ function renderAdminTab() {
     refresh,
     onNavigate: (tab) => navigate(`/admin/${tab}`),
     selectedWeekId: state.selectedWeekId,
-    onSelectWeek: (id) => { state.selectedWeekId = id; navigate(`/admin/planilla`); },
+    onSelectWeek: (id) => {
+      state.selectedWeekId = id;
+      localStorage.setItem(SELECTED_WEEK_KEY, String(id));
+      navigate(`/admin/planilla`);
+    },
     openAbono,
     onCreateWeek: async (payload) => {
       await api.createWeek(payload);
@@ -350,6 +415,7 @@ function renderAdminTab() {
 
 function renderEstudianteShell() {
   appRoot.className = 'app-root';
+  appRoot.dataset.shell = 'estudiante';
   appRoot.innerHTML = `
     <div class="bg-decor">
       <div class="blob blob-1"></div>
@@ -452,6 +518,10 @@ function openAbono({ member, week }) {
     },
     onSaved: async (payload) => {
       await api.addAbono(payload);
+      await refresh();
+    },
+    onDeleted: async (payload) => {
+      await api.deleteAbonos(payload);
       await refresh();
     }
   });

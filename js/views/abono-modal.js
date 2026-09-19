@@ -4,7 +4,7 @@
 
 import { money, weekLabel, iconHtml } from '../utils.js';
 
-export function openAbonoModal(root, { member, week, status, session, showToast, onClose, onSaved }) {
+export function openAbonoModal(root, { member, week, status, session, showToast, onClose, onSaved, onDeleted }) {
   function getCurrentAbonado() {
     const key = `${member.numero_lista}-${week.id}`;
     const g = status.grouped ? status.grouped[key] : null;
@@ -16,6 +16,12 @@ export function openAbonoModal(root, { member, week, status, session, showToast,
   let monto = pendiente > 0 ? pendiente : '';
   let nota = '';
   let loading = false;
+
+  function getAbonos() {
+    const key = `${member.numero_lista}-${week.id}`;
+    const g = status.grouped ? status.grouped[key] : null;
+    return g?.abonos || [];
+  }
 
   const presets = () => {
     const cuota = Number(week.monto_cuota);
@@ -81,6 +87,13 @@ export function openAbonoModal(root, { member, week, status, session, showToast,
               ${iconHtml('check')} Registrar abono de ${money(Number(monto) || 0)}
             </button>
 
+            ${currentAbonado > 0 ? `
+              <button type="button" class="btn-danger" data-delete-payment>
+                ${iconHtml('trash')} Quitar cuota registrada
+              </button>
+              <p class="config-hint">Elimina todos los abonos de esta cuota si fueron registrados por equivocación.</p>
+            ` : ''}
+
             <p class="modal-registered-by">Registrado por: ${session.nombre} (${session.rol})</p>
           </form>
         </div>
@@ -98,6 +111,11 @@ export function openAbonoModal(root, { member, week, status, session, showToast,
       if (e.target === overlay) close();
     });
     root.querySelector('[data-close]').addEventListener('click', close);
+
+    const deleteBtn = root.querySelector('[data-delete-payment]');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', handleDelete);
+    }
 
     function updateSubmit() {
       const num = Number(montoInput.value);
@@ -152,6 +170,23 @@ export function openAbonoModal(root, { member, week, status, session, showToast,
       loading = false;
       const submitBtn = root.querySelector('[data-submit]');
       submitBtn.disabled = false;
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`¿Quitar la cuota registrada de ${member.nombre} para la Semana ${week.numero_semana}?`)) return;
+    loading = true;
+    const deleteBtn = root.querySelector('[data-delete-payment]');
+    if (deleteBtn) deleteBtn.disabled = true;
+
+    try {
+      await onDeleted({ miembro_id: member.numero_lista, semana_id: week.id });
+      showToast(`Cuota eliminada para ${member.nombre}.`);
+      close();
+    } catch (err) {
+      showToast(err.message || 'No se pudo quitar la cuota.', 'error');
+      loading = false;
+      if (deleteBtn) deleteBtn.disabled = false;
     }
   }
 

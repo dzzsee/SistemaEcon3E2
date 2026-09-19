@@ -70,7 +70,12 @@ function moneyShort(n) {
 }
 
 export function exportPDF(status, balance, session) {
-  const { jsPDF } = window.jspdf;
+  const jsPdfApi = window.jspdf;
+  if (!jsPdfApi?.jsPDF) {
+    throw new Error('El generador PDF no está disponible. Recarga la página e inténtalo de nuevo.');
+  }
+
+  const { jsPDF } = jsPdfApi;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -121,7 +126,7 @@ export function exportPDF(status, balance, session) {
     moneyShort(r.totalDeuda)
   ]);
 
-  window.jspdf.autotable(doc, {
+  const tableOptions = {
     head,
     body,
     startY: 124,
@@ -143,7 +148,15 @@ export function exportPDF(status, balance, session) {
         else data.cell.styles.textColor = [220, 38, 38];
       }
     }
-  });
+  };
+
+  if (typeof doc.autoTable === 'function') {
+    doc.autoTable(tableOptions);
+  } else if (typeof jsPdfApi.autoTable === 'function') {
+    jsPdfApi.autoTable(doc, tableOptions);
+  } else {
+    throw new Error('El módulo de tablas PDF no está disponible. Recarga la página e inténtalo de nuevo.');
+  }
 
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);

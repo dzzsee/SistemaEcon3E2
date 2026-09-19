@@ -27,6 +27,7 @@ export function renderEstudianteHistorial(parent, { status, balance, session, sh
 
   function renderWeekRow(item, index) {
     const { week, abonado, deuda, estado } = item;
+    const cuota = Number(week.monto_cuota);
     const est = estadoInfo(estado);
     const isPaid = estado === 'pagado';
 

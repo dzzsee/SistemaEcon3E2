@@ -64,3 +64,28 @@ export async function onRequestGet(context) {
   ).all();
   return json(results);
 }
+
+// DELETE /api/payments - elimina los abonos de un miembro en una semana
+export async function onRequestDelete(context) {
+  const user = await getUserFromRequest(context.request, context.env);
+  if (!user || user.tipo !== 'admin') {
+    return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
+  }
+
+  const body = await getBody(context.request);
+  const miembroId = Number(body.miembro_id);
+  const semanaId = Number(body.semana_id);
+
+  if (!miembroId || !semanaId) {
+    return json({ success: false, message: 'miembro_id y semana_id son obligatorios.' }, 400);
+  }
+
+  await ensureSchema(context.env.DB);
+  const result = await context.env.DB.prepare(
+    'DELETE FROM abonos WHERE miembro_id = ? AND semana_id = ?'
+  )
+    .bind(miembroId, semanaId)
+    .run();
+
+  return json({ success: true, eliminados: result.meta.changes || 0 });
+}
