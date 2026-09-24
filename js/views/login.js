@@ -4,7 +4,7 @@
 
 import { iconHtml } from '../utils.js';
 
-export function renderLogin(root, { onLogin }) {
+export function renderLogin(root, { onLogin, initialTab = 'admin' }) {
   root.className = 'app-root';
   root.innerHTML = `
     <div class="login-wrap">
@@ -93,7 +93,7 @@ export function renderLogin(root, { onLogin }) {
   const submitBtn = root.querySelector('#login-submit');
   const submitLabel = submitBtn.querySelector('span');
 
-  let currentTab = 'admin';
+  let currentTab = initialTab === 'estudiante' ? 'estudiante' : 'admin';
 
   function switchTab(tab) {
     currentTab = tab;
@@ -160,11 +160,14 @@ export function renderLogin(root, { onLogin }) {
       const res = await onLogin({ usuario, pin, cedula });
       if (!res.success) {
         setError(res.message || 'Credenciales inválidas.');
-        submitBtn.innerHTML = `${iconHtml('lock')}<span>Entrar al sistema</span>`;
       }
     } catch (err) {
       setError('Error de conexión. Intenta de nuevo.');
-      submitBtn.innerHTML = `${iconHtml('lock')}<span>Entrar al sistema</span>`;
+    } finally {
+      if (submitBtn.isConnected) {
+        submitBtn.innerHTML = `${iconHtml('lock')}<span>Entrar al sistema</span>`;
+        validate();
+      }
     }
   }
 
@@ -178,6 +181,7 @@ export function renderLogin(root, { onLogin }) {
   pinEstInput.addEventListener('input', validate);
 
   validate();
+  switchTab(currentTab);
   // Focus en el campo correspondiente según la tab activa
   if (currentTab === 'admin') userInput.focus();
   else cedulaInput.focus();

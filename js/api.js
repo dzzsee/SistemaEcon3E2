@@ -6,7 +6,7 @@ const SESSION_KEY = '3e2_session';
 
 export function getSession() {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -14,11 +14,11 @@ export function getSession() {
 }
 
 export function setSession(user, token) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ ...user, token, timestamp: Date.now() }));
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...user, token, timestamp: Date.now() }));
 }
 
 export function logout() {
-  localStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 function tokenHeader() {
@@ -27,7 +27,20 @@ function tokenHeader() {
 }
 
 async function request(path, options = {}) {
-  const res = await fetch(path, options);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  const requestOptions = { ...options, signal: controller.signal };
+
+  let res;
+  try {
+    res = await fetch(path, requestOptions);
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('La solicitud tardó demasiado. Intenta de nuevo.');
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+
   if (res.status === 401) {
     const error = new Error('no-auth');
     error.status = 401;

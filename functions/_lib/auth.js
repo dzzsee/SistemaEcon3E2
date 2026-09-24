@@ -52,15 +52,15 @@ export async function getUserFromRequest(request, env) {
 }
 
 // Helper para compatibilidad: solo admins
-export function getAdminFromRequest(request, env) {
-  const user = getUserFromRequest(request, env);
+export async function getAdminFromRequest(request, env) {
+  const user = await getUserFromRequest(request, env);
   if (!user || user.tipo !== 'admin') return null;
   return user;
 }
 
 // Helper para estudiantes
-export function getEstudianteFromRequest(request, env) {
-  const user = getUserFromRequest(request, env);
+export async function getEstudianteFromRequest(request, env) {
+  const user = await getUserFromRequest(request, env);
   if (!user || user.tipo !== 'estudiante') return null;
   return user;
 }

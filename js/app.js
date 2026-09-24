@@ -63,7 +63,8 @@ const state = {
   route: '/login',
   adminTab: 'resumen',
   estudianteTab: 'dashboard',
-  selectedWeekId: null
+  selectedWeekId: null,
+  loginTab: 'admin'
 };
 
 let toastTimer = null;
@@ -169,7 +170,7 @@ async function boot() {
       navigate('/login');
       return;
     }
-    renderLogin(appRoot, { onLogin: handleLogin });
+    renderLogin(appRoot, { onLogin: handleLogin, initialTab: state.loginTab });
     return;
   }
 
@@ -204,7 +205,8 @@ async function handleLogin(credentials) {
     modalRoot.innerHTML = '';
     toastRoot.innerHTML = '';
     showToast(`Bienvenido, ${res.user.nombre}.`);
-    await loadData();
+    const loaded = await loadData();
+    if (!loaded || !api.getSession()) return res;
     // Navegar a la ruta inicial según rol
     navigate(res.user.tipo === 'admin' ? '/admin' : '/estudiante');
   }
@@ -212,6 +214,7 @@ async function handleLogin(credentials) {
 }
 
 async function handleLogout(message = '') {
+  const previousTipo = state.session?.tipo || api.getSession()?.tipo;
   clearInactivityTimer();
   api.logout();
   state.session = null;
@@ -220,6 +223,7 @@ async function handleLogout(message = '') {
   state.adminTab = 'resumen';
   state.estudianteTab = 'dashboard';
   state.selectedWeekId = null;
+  state.loginTab = previousTipo === 'estudiante' ? 'estudiante' : 'admin';
   modalRoot.innerHTML = '';
   toastRoot.innerHTML = '';
   navigate('/login');
@@ -250,13 +254,14 @@ async function loadData() {
     if (err && err.message === 'no-auth') {
       showToast('Tu sesión expiró. Inicia sesión de nuevo.', 'error');
       await handleLogout();
-      return;
+      return false;
     }
     showToast(err.message || 'No se pudo cargar la información.', 'error');
   } finally {
     state.loading = false;
     renderApp();
   }
+  return Boolean(state.status && state.balance);
 }
 
 async function refresh() {
@@ -269,7 +274,7 @@ function renderApp() {
   const route = getRoute(state.route);
 
   if (route.view === 'login') {
-    renderLogin(appRoot, { onLogin: handleLogin });
+    renderLogin(appRoot, { onLogin: handleLogin, initialTab: state.loginTab });
     return;
   }
 
@@ -325,7 +330,7 @@ function renderAdminShell() {
     </nav>
   `;
 
-  appRoot.querySelector('[data-logout]').addEventListener('click', handleLogout);
+  appRoot.querySelector('[data-logout]').addEventListener('click', () => handleLogout());
   appRoot.querySelector('[data-nav]').addEventListener('click', () => navigate('/admin/resumen'));
 
   if (window.matchMedia('(max-width: 639px)').matches) {
@@ -447,7 +452,7 @@ function renderEstudianteShell() {
     </main>
   `;
 
-  appRoot.querySelector('[data-logout]').addEventListener('click', handleLogout);
+  appRoot.querySelector('[data-logout]').addEventListener('click', () => handleLogout());
 
   if (window.matchMedia('(max-width: 639px)').matches) {
     appRoot.querySelector('.logout-text').style.display = 'none';
