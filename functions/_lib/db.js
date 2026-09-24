@@ -8,38 +8,38 @@ export const ADMINS_SEED = [
 ];
 
 export const MEMBERS_SEED = [
-  { numero_lista: 1, nombre: 'Abad Gómez Carlos René' },
-  { numero_lista: 2, nombre: 'Abad Paucar David Israel' },
-  { numero_lista: 3, nombre: 'Abril Idrovo Pablo Andrés' },
-  { numero_lista: 4, nombre: 'Álava Cabrera Mateo Alexander' },
-  { numero_lista: 5, nombre: 'Armijos Loja María Fernanda' },
-  { numero_lista: 6, nombre: 'Barros Valladares Jordán Martín' },
-  { numero_lista: 7, nombre: 'Bravo Vázquez David Andrés' },
-  { numero_lista: 8, nombre: 'Bustamante Guzmán Kevin Andrés' },
-  { numero_lista: 10, nombre: 'Castillo Muñoz Ana Paula' },
-  { numero_lista: 11, nombre: 'Cedillo Guaicha Diego Sebastián' },
-  { numero_lista: 12, nombre: 'Contreras Peralta Samantha Belén' },
-  { numero_lista: 13, nombre: 'Durán Ordóñez Angélica Cristina' },
-  { numero_lista: 14, nombre: 'Espinosa Salazar Anthony Alexander' },
-  { numero_lista: 15, nombre: 'Gallegos Tenecota Amy Samantha' },
-  { numero_lista: 16, nombre: 'Guamán Matute Jonnathan Javier' },
-  { numero_lista: 17, nombre: 'Inga Yunga Michael Eduardo' },
-  { numero_lista: 18, nombre: 'Lojano Chapa Evelyn Dayanna' },
-  { numero_lista: 19, nombre: 'Lucero Lazo Mateo Ismael' },
-  { numero_lista: 20, nombre: 'Matute Esparza Andrés Ismael' },
-  { numero_lista: 21, nombre: 'Maza Quito Marco Gabriel' },
-  { numero_lista: 22, nombre: 'Mejía Zhañay Bruno Damián' },
-  { numero_lista: 23, nombre: 'Neira Maldonado Juan José' },
-  { numero_lista: 24, nombre: 'Ortiz Terán William Ariel' },
-  { numero_lista: 26, nombre: 'Peña Morocho Marco Daniel' },
-  { numero_lista: 27, nombre: 'Pérez Cobos Mailén Sofía' },
-  { numero_lista: 28, nombre: 'Pesantez Sosa Daniela Alejandra' },
-  { numero_lista: 29, nombre: 'Pintado Pillco Christopher Rubén' },
-  { numero_lista: 30, nombre: 'Quijije Ulloa Santiago' },
-  { numero_lista: 31, nombre: 'Sarmiento Cabrera Axel Josué' },
-  { numero_lista: 32, nombre: 'Sibri Simbaña Marco Andrés' },
-  { numero_lista: 33, nombre: 'Sinche Guamán Cameron Scarleth' },
-  { numero_lista: 34, nombre: 'Tipantaxi Cazorla Christian Andrés' }
+  { numero_lista: 1, nombre: 'Abad Gómez Carlos René', cedula: '0150901247', pin: '1234' },
+  { numero_lista: 2, nombre: 'Abad Paucar David Israel', cedula: '0150704070', pin: '5716' },
+  { numero_lista: 3, nombre: 'Abril Idrovo Pablo Andrés', cedula: '0150799138', pin: '1103' },
+  { numero_lista: 4, nombre: 'Álava Cabrera Mateo Alexander', cedula: '0107537383', pin: '2468' },
+  { numero_lista: 5, nombre: 'Armijos Loja María Fernanda', cedula: '0151171337', pin: '2409' },
+  { numero_lista: 6, nombre: 'Barros Valladares Jordán Martín', cedula: '0150680791', pin: '1234' },
+  { numero_lista: 7, nombre: 'Bravo Vázquez David Andrés', cedula: '0150722650', pin: '2304' },
+  { numero_lista: 8, nombre: 'Bustamante Guzmán Kevin Andrés', cedula: '0150392900', pin: '1234' },
+  { numero_lista: 10, nombre: 'Castillo Muñoz Ana Paula', cedula: '0107685596', pin: '2008' },
+  { numero_lista: 11, nombre: 'Cedillo Guaicha Diego Sebastián', cedula: '0150956506', pin: '2009' },
+  { numero_lista: 12, nombre: 'Contreras Peralta Samantha Belén', cedula: '0150694065', pin: '1703' },
+  { numero_lista: 13, nombre: 'Durán Ordóñez Angélica Cristina', cedula: '0107527657', pin: '1234' },
+  { numero_lista: 14, nombre: 'Espinosa Salazar Anthony Alexander', cedula: '0151043676', pin: '2513' },
+  { numero_lista: 15, nombre: 'Gallegos Tenecota Amy Samantha', cedula: '0150978930', pin: '2026' },
+  { numero_lista: 16, nombre: 'Guamán Matute Jonnathan Javier', cedula: '0151060621', pin: '5414' },
+  { numero_lista: 17, nombre: 'Inga Yunga Michael Eduardo', cedula: '0151216892', pin: '5555' },
+  { numero_lista: 18, nombre: 'Lojano Chapa Evelyn Dayanna', cedula: '0107888455', pin: '1235' },
+  { numero_lista: 19, nombre: 'Lucero Lazo Mateo Ismael', cedula: '0107543548', pin: '2009' },
+  { numero_lista: 20, nombre: 'Matute Esparza Andrés Ismael', cedula: '0150695351', pin: '1987' },
+  { numero_lista: 21, nombre: 'Maza Quito Marco Gabriel', cedula: '0151038965', pin: '1234' },
+  { numero_lista: 22, nombre: 'Mejía Zhañay Bruno Damián', cedula: '0150373108', pin: '1426' },
+  { numero_lista: 23, nombre: 'Neira Maldonado Juan José', cedula: '', pin: '' },
+  { numero_lista: 24, nombre: 'Ortiz Terán William Ariel', cedula: '0150677383', pin: '6336' },
+  { numero_lista: 26, nombre: 'Peña Morocho Marco Daniel', cedula: '1450150352', pin: '2009' },
+  { numero_lista: 27, nombre: 'Pérez Cobos Mailén Sofía', cedula: '0150332070', pin: '5555' },
+  { numero_lista: 28, nombre: 'Pesantez Sosa Daniela Alejandra', cedula: '0150458008', pin: '1103' },
+  { numero_lista: 29, nombre: 'Pintado Pillco Christopher Rubén', cedula: '0150181220', pin: '0022' },
+  { numero_lista: 30, nombre: 'Quijije Ulloa Santiago', cedula: '0150866630', pin: '1310' },
+  { numero_lista: 31, nombre: 'Sarmiento Cabrera Axel Josué', cedula: '0107617011', pin: '1234' },
+  { numero_lista: 32, nombre: 'Sibri Simbaña Marco Andrés', cedula: '0150551265', pin: '412' },
+  { numero_lista: 33, nombre: 'Sinche Guamán Cameron Scarleth', cedula: '0150746105', pin: '2122' },
+  { numero_lista: 34, nombre: 'Tipantaxi Cazorla Christian Andrés', cedula: '0107912552', pin: '1717' }
 ];
 
 export function getMonday(d = new Date()) {
@@ -168,8 +168,8 @@ export async function ensureSchema(db) {
   if (memberCount.count === 0) {
     for (const m of MEMBERS_SEED) {
       await db
-        .prepare('INSERT INTO miembros (numero_lista, nombre) VALUES (?, ?)')
-        .bind(m.numero_lista, m.nombre)
+        .prepare('INSERT INTO miembros (numero_lista, nombre, cedula, pin) VALUES (?, ?, ?, ?)')
+        .bind(m.numero_lista, m.nombre, m.cedula || null, m.pin || '')
         .run();
     }
   }
