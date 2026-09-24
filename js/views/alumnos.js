@@ -48,7 +48,7 @@ export function renderAlumnos(parent, { status }) {
           </div>
           <div class="alumno-side">
             <span class="alumno-pct">${percentage}%</span>
-            <span class="alumno-pct-label">cumplido</span>
+            <span class="alumno-pct-label">cumplimiento</span>
             ${iconHtml('chevronDown', `chevron ${isOpen ? 'chevron-open' : ''}`)}
           </div>
         </button>
