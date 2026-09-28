@@ -29,6 +29,31 @@ export function getMode() {
   return MODE;
 }
 
+// Igual que getMode() pero esperando a que el health-check decida. Util para
+// la UI: necesita saber si el archivo se va a subir de verdad o no.
+export async function getActiveMode() {
+  return detectMode();
+}
+
+// Marca los errores que EL SERVIDOR devolvio (4xx/5xx con JSON), para no
+// confundirlos con una red caida. Un 503 de R2 no se puede degradar a LocalStorage.
+class HttpError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = 'HttpError';
+    this.status = status;
+  }
+}
+
+async function mensajeDeError(res, porDefecto) {
+  try {
+    const data = await res.json();
+    return data?.error || data?.message || porDefecto;
+  } catch {
+    return `${porDefecto} (HTTP ${res.status})`;
+  }
+}
+
 function tokenHeader() {
   const session = dbService.getSession();
   return { Authorization: `Bearer ${session?.token || ''}` };
@@ -124,7 +149,7 @@ export async function getStatus() {
       grouped[key].total += Number(p.monto);
       grouped[key].abonos.push(p);
     }
-    return { members, weeks, grouped };
+    return { members, weeks, grouped, gastos: dbService.getGastos() };
   });
 }
 
@@ -230,6 +255,107 @@ export async function createWeek({ fecha_inicio, fecha_fin, monto_cuota, descrip
 
 export function resetDemo() {
   dbService.reset();
+}
+
+// ---------------- GASTOS ----------------
+// Los gastos se muestran desde status.gastos, pero el endpoint /api/expenses
+// queda disponible para consultas sueltas (curl, depuracion).
+
+export async function getGastos() {
+  const mode = await detectMode();
+  if (mode === 'd1') {
+    try {
+      const res = await fetch('/api/expenses', { headers: tokenHeader() });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error('no-auth');
+    } catch (e) {
+      if (e.message === 'no-auth') throw e;
+    }
+  }
+  return fallbackToLocal(() => dbService.getGastos());
+}
+
+// factura: File | null (opcional). El resto de campos van en `datos`.
+export async function addGasto(datos, factura = null) {
+  const mode = await detectMode();
+  const session = await getSession();
+
+  if (mode === 'd1') {
+    try {
+      const form = new FormData();
+      form.append('concepto', datos.concepto);
+      form.append('monto', String(datos.monto));
+      form.append('fecha', datos.fecha);
+      form.append('categoria', datos.categoria || '');
+      form.append('nota', datos.nota || '');
+      if (factura) form.append('factura', factura, factura.name);
+
+      // OJO: sin Content-Type manual, el navegador pone el boundary del FormData.
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: tokenHeader(),
+        body: form
+      });
+      if (res.status === 401) throw new Error('no-auth');
+      // Un error del servidor NO se puede "salvar" con LocalStorage: el gasto
+      // se guardaria sin la factura y el admin creeria que si se subio.
+      if (!res.ok) throw new Error(await mensajeDeError(res, 'No se pudo registrar el gasto.'));
+      return await res.json();
+    } catch (e) {
+      if (e.message === 'no-auth') throw e;
+      // Solo red caida (servidor apagado) justifica el modo local.
+      if (e instanceof HttpError) throw e;
+      return fallbackToLocal(() =>
+        dbService.saveGasto({ ...datos, registrado_por: session?.nombre || 'Tesorero' })
+      );
+    }
+  }
+
+  return dbService.saveGasto({ ...datos, registrado_por: session?.nombre || 'Tesorero' });
+}
+
+export async function deleteGasto(id) {
+  const mode = await detectMode();
+
+  if (mode === 'd1') {
+    try {
+      const res = await fetch(`/api/expenses/${id}`, {
+        method: 'DELETE',
+        headers: tokenHeader()
+      });
+      if (res.status === 401) throw new Error('no-auth');
+      // Borrar en local cuando el servidor dijo "no" deja el R2 con el
+      // archivo huerfano o peor, borra un gasto que sigue en D1.
+      if (!res.ok) throw new Error(await mensajeDeError(res, 'No se pudo eliminar el gasto.'));
+      return await res.json();
+    } catch (e) {
+      if (e.message === 'no-auth') throw e;
+      if (e instanceof HttpError) throw e;
+      return fallbackToLocal(() => dbService.deleteGasto(id));
+    }
+  }
+
+  return dbService.deleteGasto(id);
+}
+
+// Trae el archivo como Blob. Necesario porque <a href> y <img src> no pueden
+// mandar la cabecera Authorization, asi que no podemos apuntar la URL directo.
+export async function getGastoArchivo(id) {
+  const mode = await detectMode();
+  if (mode !== 'd1') return null;
+
+  const res = await fetch(`/api/expenses/${id}`, { headers: tokenHeader() });
+  if (res.status === 401) throw new Error('no-auth');
+  if (!res.ok) return null;
+
+  const disposition = res.headers.get('Content-Disposition') || '';
+  const match = /filename="([^"]+)"/.exec(disposition);
+
+  return {
+    blob: await res.blob(),
+    nombre: match ? match[1] : `factura-${id}`,
+    mime: res.headers.get('Content-Type') || 'application/octet-stream'
+  };
 }
 
 // Helper de formato moneda

@@ -15,17 +15,28 @@ export async function onRequestGet(context) {
   const recaudadoRow = await context.env.DB.prepare(
     'SELECT COALESCE(SUM(monto), 0) as total FROM abonos'
   ).first();
+  const gastosRow = await context.env.DB.prepare(
+    'SELECT COALESCE(SUM(monto), 0) as total FROM gastos'
+  ).first();
 
   const totalRecaudado = Number(recaudadoRow.total);
+  const totalGastos = Number(gastosRow.total);
   const totalEsperado = semanas.results.reduce(
     (acc, s) => acc + s.monto_cuota * members.results.length,
     0
   );
-  const totalDeuda = Math.max(0, totalEsperado - totalRecaudado);
-  const porcentajeCobro = totalEsperado > 0 ? (totalRecaudado / totalEsperado) * 100 : 0;
+
+  // Los gastos salen de la caja del grupo, asi que aumentan lo que falta por
+  // cobrar y reducen el porcentaje de cumplimiento. El saldo nunca se negocia
+  // con max(0, ...) a proposito: puede ser negativo si se gastó más de lo cobrado.
+  const saldoCaja = totalRecaudado - totalGastos;
+  const totalDeuda = Math.max(0, totalEsperado - totalRecaudado + totalGastos);
+  const porcentajeCobro = totalEsperado > 0 ? (saldoCaja / totalEsperado) * 100 : 0;
 
   return json({
     totalRecaudado,
+    totalGastos,
+    saldoCaja,
     totalEsperado,
     totalDeuda,
     porcentajeCobro: Number(porcentajeCobro.toFixed(1)),

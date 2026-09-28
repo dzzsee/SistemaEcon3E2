@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
-import { FileDown, FileSpreadsheet, FileText, CalendarPlus, Loader2, Table2 } from 'lucide-react';
+import { FileDown, FileSpreadsheet, FileText, CalendarPlus, Loader2, Table2, Receipt } from 'lucide-react';
 import { cn, money } from '../utils/cn.js';
-import { exportCSV, exportPDF } from '../utils/export.js';
+import { exportCSV, exportPDF, exportGastosCSV } from '../utils/export.js';
 import * as api from '../services/api.js';
 
 export default function ExportPanel({ status, balance, session, showToast }) {
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
+
+  const numGastos = status.gastos?.length || 0;
 
   // Resumen por integrante para previsualización
   const rows = useMemo(
@@ -34,6 +36,11 @@ export default function ExportPanel({ status, balance, session, showToast }) {
   function handlePDF() {
     exportPDF(status, balance, session);
     showToast('Reporte PDF generado.');
+  }
+
+  function handleGastosCSV() {
+    exportGastosCSV(status);
+    showToast('CSV de gastos generado.');
   }
 
   async function handleNewWeek(e) {
@@ -73,7 +80,7 @@ export default function ExportPanel({ status, balance, session, showToast }) {
       </div>
 
       {/* Botones de exportación */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <button
           onClick={handleCSV}
           className="glass-card glass-card-hover group flex items-center gap-4 rounded-2xl p-5 text-left"
@@ -96,7 +103,26 @@ export default function ExportPanel({ status, balance, session, showToast }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-white">Generar reporte PDF</p>
-            <p className="text-xs text-slate-400">Documento listo para compartir</p>
+            <p className="text-xs text-slate-400">Planilla, gastos y resumen de caja</p>
+          </div>
+        </button>
+
+        <button
+          onClick={handleGastosCSV}
+          disabled={numGastos === 0}
+          className={cn(
+            'glass-card glass-card-hover group flex items-center gap-4 rounded-2xl p-5 text-left',
+            numGastos === 0 && 'cursor-not-allowed opacity-40'
+          )}
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 transition group-hover:scale-110">
+            <Receipt className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">CSV de gastos</p>
+            <p className="text-xs text-slate-400">
+              {numGastos === 0 ? 'Todavía no hay gastos' : `${numGastos} registro(s) con su total`}
+            </p>
           </div>
         </button>
       </div>

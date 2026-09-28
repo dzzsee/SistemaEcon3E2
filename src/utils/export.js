@@ -93,6 +93,9 @@ export function exportPDF(status, balance, session) {
   doc.text(`Total esperado: ${money(balance.totalEsperado)}`, 220, 108);
   doc.text(`Deuda pendiente: ${money(balance.totalDeuda)}`, 400, 108);
   doc.text(`Cumplimiento: ${balance.porcentajeCobro}%`, 580, 108);
+  // Segunda fila: los gastos salen de la caja y acaban en la deuda del grupo.
+  doc.text(`Total en gastos: ${money(balance.totalGastos)}`, 40, 122);
+  doc.text(`Efectivo en caja: ${money(balance.saldoCaja)}`, 220, 122);
 
   // Tabla principal
   const head = [[
@@ -114,10 +117,10 @@ export function exportPDF(status, balance, session) {
     money(r.totalDeuda).replace('MX$', '$')
   ]);
 
-  autoTable(doc, {
+  const tabla = autoTable(doc, {
     head,
     body,
-    startY: 124,
+    startY: 140,
     styles: { fontSize: 7.5, cellPadding: 3 },
     headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [240, 253, 244] },
@@ -138,13 +141,92 @@ export function exportPDF(status, balance, session) {
     }
   });
 
+  // Pie de la planilla, anclado a donde termino la tabla. Se dibuja ANTES de
+  // addPage(): si no, el texto caeria en la pagina de gastos y se solaparia.
+  const altoPagina = doc.internal.pageSize.getHeight();
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
   doc.text(
     'Sem = semana del calendario · Verde: pagado · Ámbar: abonado parcial · Rojo: deuda',
     40,
-    doc.internal.pageSize.getHeight() - 24
+    Math.min(tabla.lastAutoTable.finalY + 14, altoPagina - 24)
   );
 
+  // Tabla de gastos, en su propia pagina para no partir la planilla.
+  const gastos = status.gastos || [];
+  if (gastos.length) {
+    doc.addPage();
+    doc.setFillColor(6, 78, 59);
+    doc.rect(0, 0, pageWidth, 64, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Gastos Registrados · 3E2', 40, 32);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${gastos.length} registro(s) · total ${money(balance.totalGastos)}`, 40, 50);
+
+    autoTable(doc, {
+      head: [['Fecha', 'Concepto', 'Categoría', 'Monto', 'Nota', 'Registró', 'Factura']],
+      body: [...gastos]
+        .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+        .map((g) => [
+          g.fecha,
+          g.concepto,
+          g.categoria || '—',
+          money(g.monto).replace('MX$', '$'),
+          g.nota || '—',
+          g.registrado_por || '—',
+          g.tiene_archivo ? 'Sí' : 'No'
+        ]),
+      startY: 84,
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+      headStyles: { fillColor: [245, 158, 11], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [255, 251, 235] },
+      columnStyles: {
+        0: { cellWidth: 62 },
+        3: { cellWidth: 66, halign: 'right' },
+        6: { cellWidth: 44, halign: 'center' }
+      }
+    });
+
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      'Los gastos se descuentan del efectivo en caja y aumentan la deuda pendiente del grupo.',
+      40,
+      altoPagina - 24
+    );
+  }
+
   doc.save(`control-cuotas-3E2-${today()}.pdf`);
+}
+
+// CSV solo de gastos. El CSV principal es por integrante, asi que los gastos
+// viven en su propio archivo para que se pueda abrir sin depender de Excel.
+export function exportGastosCSV(status) {
+  const gastos = status.gastos || [];
+  const header = ['Fecha', 'Concepto', 'Categoría', 'Monto', 'Nota', 'Registró', 'Tiene factura'];
+  const escapar = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+
+  const lines = [header.map(escapar).join(',')];
+  for (const g of [...gastos].sort((a, b) => (a.fecha < b.fecha ? 1 : -1))) {
+    lines.push(
+      [
+        g.fecha,
+        escapar(g.concepto),
+        escapar(g.categoria),
+        g.monto,
+        escapar(g.nota),
+        escapar(g.registrado_por),
+        g.tiene_archivo ? 'Sí' : 'No'
+      ].join(',')
+    );
+  }
+  const total = gastos.reduce((acc, g) => acc + Number(g.monto || 0), 0);
+  lines.push(['', 'TOTAL', '', total, '', '', ''].join(','));
+
+  // BOM para acentos en Excel
+  const csv = '\uFEFF' + lines.join('\n');
+  download(`gastos-3E2-${today()}.csv`, csv, 'text/csv;charset=utf-8;');
 }

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { TrendingUp, Wallet, AlertTriangle, CheckCircle2, Users, CalendarDays, Sparkles } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import { TrendingUp, Wallet, AlertTriangle, CheckCircle2, Users, CalendarDays, Sparkles, PiggyBank, Receipt } from 'lucide-react';
 import { cn, money, weekLabel } from '../utils/cn.js';
 
 function Card({ icon: Icon, label, value, sub, accent, delay = 0 }) {
@@ -83,7 +83,12 @@ function SemanaCard({ week, status, onNavigate }) {
 }
 
 export default function DashboardHome({ balance, status, onNavigate, session }) {
+  // Los gastos pueden empujar el porcentaje fuera de 0-100 (deuda neta > esperado,
+  // o caja en negativo), asi que la barra se recorta pero el dato se muestra real.
   const pct = balance.porcentajeCobro;
+  const anchoBarra = Math.max(0, Math.min(100, pct));
+  const totalGastos = balance.totalGastos || 0;
+  const numGastos = status.gastos?.length || 0;
 
   return (
     <div className="space-y-6">
@@ -93,7 +98,7 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
       </div>
 
       {/* Tarjetas de balance */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card
           icon={Wallet}
           label="Total recaudado"
@@ -111,12 +116,28 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
           delay={80}
         />
         <Card
+          icon={PiggyBank}
+          label="Efectivo en caja"
+          value={money(balance.saldoCaja)}
+          sub="recaudado − gastos"
+          accent="bg-sky-500/15 text-sky-400"
+          delay={160}
+        />
+        <Card
+          icon={Receipt}
+          label="Gastos"
+          value={money(totalGastos)}
+          sub={numGastos === 1 ? '1 registro' : `${numGastos} registros`}
+          accent="bg-amber-500/15 text-amber-400"
+          delay={240}
+        />
+        <Card
           icon={TrendingUp}
           label="Porcentaje cobrado"
           value={`${pct}%`}
           sub="del total proyectado"
           accent="bg-teal-500/15 text-teal-400"
-          delay={160}
+          delay={320}
         />
         <Card
           icon={CheckCircle2}
@@ -124,7 +145,7 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
           value={`${balance.totalAlumnos}`}
           sub="integrantes inscritos"
           accent="bg-violet-500/15 text-violet-400"
-          delay={240}
+          delay={400}
         />
       </div>
 
@@ -135,14 +156,19 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
             <Sparkles className="h-4 w-4 text-emerald-400" />
             Cumplimiento global
           </span>
-          <span className="font-bold text-emerald-400">{pct}%</span>
+          <span className={cn('font-bold', pct < 0 ? 'text-rose-400' : 'text-emerald-400')}>{pct}%</span>
         </div>
         <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800/80">
           <div
             className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-300 transition-all duration-1000"
-            style={{ width: `${Math.min(100, pct)}%` }}
+            style={{ width: `${anchoBarra}%` }}
           />
         </div>
+        {pct < 0 && (
+          <p className="mt-2 text-xs text-rose-300">
+            El porcentaje es negativo porque los gastos superan lo recaudado.
+          </p>
+        )}
       </div>
 
       {/* Progreso semanal cerca */}

@@ -77,6 +77,7 @@ const STORAGE_KEYS = {
   MEMBERS: 'econ3e2_members',
   WEEKS: 'econ3e2_weeks',
   ABONOS: 'econ3e2_abonos',
+  GASTOS: 'econ3e2_gastos',
   SESSION: '3e2_session'
 };
 
@@ -96,6 +97,7 @@ function seedIfMissing() {
   const weeks = read(STORAGE_KEYS.WEEKS, null);
   if (!weeks) write(STORAGE_KEYS.WEEKS, generateDefaultWeeks());
   if (!localStorage.getItem(STORAGE_KEYS.ABONOS)) write(STORAGE_KEYS.ABONOS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.GASTOS)) write(STORAGE_KEYS.GASTOS, []);
 }
 
 export const dbService = {
@@ -136,6 +138,42 @@ export const dbService = {
     return read(STORAGE_KEYS.ABONOS, []);
   },
 
+  getGastos() {
+    seedIfMissing();
+    return read(STORAGE_KEYS.GASTOS, []);
+  },
+
+  // En modo LocalStorage no hay R2: el archivo NO se conserva (solo se registra
+  // el gasto). Ver GastoModal.jsx, que avisa de esto al administrador.
+  saveGasto({ concepto, categoria, monto, fecha, nota, registrado_por }) {
+    seedIfMissing();
+    const gastos = this.getGastos();
+    const record = {
+      id: Date.now() + Math.random(),
+      concepto,
+      categoria: categoria || null,
+      monto: Number(monto),
+      fecha,
+      nota: nota || '',
+      registrado_por: registrado_por || 'Tesorero',
+      nombre_archivo: null,
+      mime: null,
+      tamano: 0,
+      tiene_archivo: 0,
+      fecha_registro: new Date().toISOString()
+    };
+    gastos.push(record);
+    write(STORAGE_KEYS.GASTOS, gastos);
+    return { success: true, id: record.id, tiene_archivo: false };
+  },
+
+  deleteGasto(id) {
+    seedIfMissing();
+    const gastos = this.getGastos();
+    write(STORAGE_KEYS.GASTOS, gastos.filter((g) => g.id !== id));
+    return { success: true, id };
+  },
+
   saveAbono({ miembro_id, semana_id, monto, registrado_por, nota }) {
     seedIfMissing();
     const abonos = this.getAbonos();
@@ -166,14 +204,22 @@ export const dbService = {
     const members = this.getMembers();
     const weeks = this.getWeeks();
     const abonos = this.getAbonos();
+    const gastos = this.getGastos();
 
     const totalRecaudado = abonos.reduce((acc, a) => acc + Number(a.monto), 0);
+    const totalGastos = gastos.reduce((acc, g) => acc + Number(g.monto), 0);
     const totalEsperado = weeks.reduce((acc, w) => acc + w.monto_cuota * members.length, 0);
-    const totalDeuda = Math.max(0, totalEsperado - totalRecaudado);
-    const porcentajeCobro = totalEsperado > 0 ? (totalRecaudado / totalEsperado) * 100 : 0;
+
+    // Espejo exacto de functions/api/balance.js: los gastos aumentan la deuda y
+    // saldoCaja puede quedar negativo.
+    const saldoCaja = totalRecaudado - totalGastos;
+    const totalDeuda = Math.max(0, totalEsperado - totalRecaudado + totalGastos);
+    const porcentajeCobro = totalEsperado > 0 ? (saldoCaja / totalEsperado) * 100 : 0;
 
     return {
       totalRecaudado,
+      totalGastos,
+      saldoCaja,
       totalEsperado,
       totalDeuda,
       porcentajeCobro: Number(porcentajeCobro.toFixed(1)),

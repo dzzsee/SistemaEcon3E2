@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut, LayoutDashboard, Table2, Users, FileDown, Wallet } from 'lucide-react';
+import { LogOut, LayoutDashboard, Table2, Users, FileDown, Wallet, Receipt } from 'lucide-react';
 import LoginPage from './components/LoginPage.jsx';
 import DashboardHome from './components/DashboardHome.jsx';
 import Planilla from './components/Planilla.jsx';
 import AlumnosPanel from './components/AlumnosPanel.jsx';
 import ExportPanel from './components/ExportPanel.jsx';
+import GastosPanel from './components/GastosPanel.jsx';
 import Toast from './components/Toast.jsx';
 import { cn, rolInfo } from './utils/cn.js';
 import * as api from './services/api.js';
@@ -13,6 +14,7 @@ const TABS = [
   { id: 'resumen', label: 'Resumen', icon: LayoutDashboard },
   { id: 'planilla', label: 'Planilla', icon: Table2 },
   { id: 'alumnos', label: 'Alumnos', icon: Users },
+  { id: 'gastos', label: 'Gastos', icon: Receipt },
   { id: 'exportar', label: 'Exportar', icon: FileDown }
 ];
 
@@ -171,6 +173,9 @@ export default function App() {
             {tab === 'alumnos' && (
               <AlumnosPanel status={status} balance={balance} session={session} showToast={showToast} />
             )}
+            {tab === 'gastos' && (
+              <GastosPanel status={status} balance={balance} session={session} showToast={showToast} />
+            )}
             {tab === 'exportar' && (
               <ExportPanel status={status} balance={balance} session={session} showToast={showToast} />
             )}
@@ -180,7 +185,7 @@ export default function App() {
 
       {/* Bottom nav móvil */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-slate-950/90 backdrop-blur-xl sm:hidden">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-5">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = tab === t.id;

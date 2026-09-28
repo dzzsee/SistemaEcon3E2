@@ -96,8 +96,23 @@ const SCHEMA_STATEMENTS = [
     FOREIGN KEY (miembro_id) REFERENCES miembros(numero_lista),
     FOREIGN KEY (semana_id) REFERENCES semanas(id)
   )`,
+  `CREATE TABLE IF NOT EXISTS gastos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    concepto TEXT NOT NULL,
+    categoria TEXT,
+    monto REAL NOT NULL,
+    fecha TEXT NOT NULL,
+    nota TEXT,
+    registrado_por TEXT NOT NULL,
+    r2_key TEXT,
+    nombre_archivo TEXT,
+    mime TEXT,
+    tamano INTEGER,
+    fecha_registro TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_abonos_miembro ON abonos(miembro_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_abonos_semana ON abonos(semana_id)`
+  `CREATE INDEX IF NOT EXISTS idx_abonos_semana ON abonos(semana_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha)`
 ];
 
 // Inicializa la base de datos (idempotente): crea tablas y siembra datos
@@ -156,3 +171,9 @@ export function json(data, status = 200, extraHeaders = {}) {
 export function getBody(request) {
   return request.json().catch(() => ({}));
 }
+
+// Tipos y tamano maximo de la factura/recibo que se guarda en R2.
+// OJO: estan duplicados en src/utils/files.js (capa LocalStorage). Si los
+// cambias, cambialos en los dos sitios.
+export const ARCHIVOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+export const MAX_ARCHIVO_BYTES = 10 * 1024 * 1024;

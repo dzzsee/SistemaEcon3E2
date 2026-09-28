@@ -26,7 +26,9 @@ está disponible cambia a LocalStorage sin configuración adicional.
   - `Abonado` → abonado > 0 y < cuota
   - `Deuda` → sin abonos
 - **Múltiples abonos por semana**: los abonos parciales se acumulan (ej. 12 + 8 = 20).
-- **Balance global**: total recaudado, deuda pendiente, % de cumplimiento y saldo esperado.
+- **Gastos con factura**: registra la salida de dinero, toma la foto de la factura en el momento y descárgala o elimínala después.
+- **OCR opcional en el navegador**: Tesseract.js lee la factura y contrasta los importes con el monto capturado; nunca bloquea el registro.
+- **Balance global**: total recaudado, gastos, efectivo en caja, deuda pendiente y % de cumplimiento.
 - **Panel de alumnos** con historial completo y barra de cumplimiento individual.
 - **Exportación**: Excel/CSV y reporte PDF listo para compartir.
 - **Acceso restringido** a 3 administradores: Tutor, Presidente y Tesorero.
@@ -93,8 +95,10 @@ npm run db:migrate:local     # aplica schema.sql a la D1 local
 │       ├── weeks.js               # semanas (GET list | POST crear)
 │       ├── payments.js            # abonos (GET historial | POST crear)
 │       ├── balance.js             # resumen financiero
-│       ├── status.js              # matriz completa para la UI
-│       └── report.js              # datos para exportación
+│       ├── status.js              # matriz completa + gastos para la UI
+│       ├── report.js              # datos para exportación
+│       ├── expenses.js            # gastos (GET lista | POST crear, multipart)
+│       └── expenses/[id].js       # factura (GET descarga) y borrado (DELETE)
 ├── src/
 │   ├── components/                # UI: Login, Dashboard, Planilla, Alumnos, Exportar, Modal, Toast
 │   ├── services/
@@ -102,9 +106,12 @@ npm run db:migrate:local     # aplica schema.sql a la D1 local
 │   │   └── db.js                  # lógica LocalStorage (espejo del backend)
 │   └── utils/
 │       ├── cn.js                  # helpers de clases, formato y roles
-│       └── export.js              # generación CSV y PDF
+│       ├── export.js              # generación CSV y PDF
+│       ├── files.js               # compresión de imagen y rasterizado de PDF
+│       └── ocr.js                 # Tesseract.js + extracción de importes
+├── public/pdf-standard-fonts/     # fuentes estándar para renderizar PDF
 ├── schema.sql                     # esquema + datos iniciales (D1/SQLite)
-├── wrangler.toml                  # configuración de Cloudflare (binding DB)
+├── wrangler.toml                  # configuración de Cloudflare (bindings DB y R2)
 ├── .dev.vars                      # SESSION_SECRET para desarrollo local
 ├── .github/workflows/deploy.yml   # CI/CD automático
 └── scripts/setup-cloudflare.sh    # bootstrap automático de Cloudflare
@@ -120,10 +127,28 @@ npm run db:migrate:local     # aplica schema.sql a la D1 local
 | `miembros`       | `numero_lista` (PK), `nombre`, `activo`                                                     | Lista fija de integrantes          |
 | `semanas`        | `id`, `numero_semana`, `fecha_inicio`, `fecha_fin`, `monto_cuota`, `descripcion`            | Semana de lunes a domingo + cuota  |
 | `abonos`         | `id`, `miembro_id`, `semana_id`, `monto`, `fecha_registro`, `registrado_por`, `nota`        | Cada pago/abono (se acumulan)      |
+| `gastos`         | `id`, `concepto`, `categoria`, `monto`, `fecha`, `nota`, `registrado_por`, `r2_key`, `nombre_archivo`, `mime`, `tamano` | Salidas de dinero + su factura |
+
+Los gastos **no** llevan `semana_id`: son globales, no pertenecen a una semana del
+calendario. El archivo de la factura vive en R2, no en D1; en la fila solo se
+guarda la clave `r2_key` y los metadatos.
 
 **Cálculo por semana** (mismo en backend y LocalStorage):
 `abonado = Σ montos de abonos` → `deuda = max(0, cuota - abonado)`
 → `estado = pagado | abonado | deuda`.
+
+**Balance con gastos** (idéntico en `functions/api/balance.js` y `src/services/db.js`):
+
+```
+totalGastos   = Σ montos de gastos
+saldoCaja     = totalRecaudado − totalGastos
+totalDeuda    = max(0, totalEsperado − totalRecaudado + totalGastos)
+porcentajeCobro = saldoCaja / totalEsperado × 100
+```
+
+Los gastos **restan** caja y **aumentan** la deuda pendiente. `porcentajeCobro`
+puede quedar negativo si el grupo gastó más de lo que.recaudó; por eso la barra
+de cumplimiento recorta el ancho a 0-100 pero el número se muestra real.
 
 ---
 
@@ -141,8 +166,18 @@ npm run db:migrate:local     # aplica schema.sql a la D1 local
 | GET    | `/api/balance`      | Sí   | Resumen financiero                            |
 | GET    | `/api/status`       | Sí   | Members + weeks + abonos agrupados (UI)       |
 | GET    | `/api/report`       | Sí   | Matriz completa miembro × semana (export)     |
+| GET    | `/api/expenses`     | Sí   | Listar gastos (sin los archivos)               |
+| POST   | `/api/expenses`     | Sí   | Crear gasto · `multipart/form-data`           |
+| GET    | `/api/expenses/:id` | Sí   | Descargar la factura                           |
+| DELETE | `/api/expenses/:id` | Sí   | Eliminar gasto **y** su objeto en R2          |
 
 Autenticación: cabecera `Authorization: Bearer <token>` (token firmado HMAC-SHA256).
+
+`POST /api/expenses` acepta `concepto`, `monto`, `fecha`, `categoria`, `nota` y,
+opcionalmente, `factura` (JPG, PNG, WEBP o PDF, máx. 10 MB). Devuelve **503**
+con un mensaje claro si el binding de R2 no está disponible, en vez de
+fallar en silencio. No se puede editar un gasto: se elimina y se vuelve a
+registrar.
 
 ---
 
@@ -212,6 +247,62 @@ guarda y vuelve a ejecutar el despliegue.
 
 ---
 
+## Gastos, facturas y OCR
+
+Los gastos son **salidas de dinero** del grupo. Restan el efectivo en caja y
+aumentan la deuda pendiente. No se editan: se eliminan y se vuelven a registrar.
+
+### Tomar la foto de la factura
+
+En la pestaña **Gastos → Registrar gasto** hay dos botones:
+
+- **Tomar foto**: abre la cámara del móvil directamente (`capture="environment"`).
+  Es la vía para las facturas físicas, que se fotografían en el momento del gasto.
+- **Adjuntar**: abre la galería o el explorador de archivos, para cuando la
+  factura ya viene en PDF o en una foto que ya se tenía.
+
+La imagen se **comprime en el navegador** antes de subirla (máx. 1600 px, JPEG
+~82 %), respetando la orientación EXIF, así que una foto de celular de 4 MB baja
+a unos 200 KB. El límite del servidor son 10 MB.
+
+### OCR (opcional)
+
+El botón **Verificar el total con OCR** corre **Tesseract.js en el navegador**.
+El motor y el diccionario se descargan de un CDN la primera vez (~2 MB) y luego
+quedan cacheados.
+
+El OCR es una **segunda opinión, no una autoridad**:
+
+1. Se rasteriza la imagen (o la primera página del PDF, vía pdf.js) y se lee el texto.
+2. `extraerImportes()` detecta los importes y los puntúa: +40 si la línea dice
+   *total / importe / a pagar*, −20 si dice *subtotal / IVA / descuento*, +8 si
+   trae símbolo de moneda, y +20 al importe más alto **entre las líneas que
+   dicen total** (no el máximo global, o el RFC del proveedor se llevaría el prize).
+3. `compararConOCR()` contrasta esos candidatos con el monto que capturó el
+   administrador y avisa si coinciden o en cuánto difieren.
+4. Los importes detectados salen como botones: un toque los pone en el monto.
+
+Nunca bloquea el registro: si el OCR falla, si no encuentra números o si la
+factura es un PDF que no se pudo rasterizar, el gasto se guarda igual con un aviso.
+
+El parsing contempla los dos formatos de separador (`1.250,00` y `1,250.00`) y
+las confusiones típicas del OCR (`1,3O5,4O` → `1305.40`).
+
+> **Trampa de build**: `tesseract.js` es CommonJS y su entry hace
+> `module.exports = { ..., ...Tesseract }`. Ese spread impide que Rollup deduzca
+> los exports con nombre y el `import()` dinámico llega con una capa extra de
+> namespace (`mod.default.default`), con `createWorker` indefinido. Por eso
+> `src/utils/ocr.js` importa **`tesseract.js/dist/tesseract.esm.min.js`**, que
+> trae un `default` limpio y ya viene compilado para navegador. Si el OCR falla
+> con "createWorker is not a function", se rompió esto.
+
+### Modo local (sin R2)
+
+En `npm run dev` el health-check da 404, la app cae a LocalStorage y **el archivo
+no se guarda**: solo los datos del gasto. El modal lo avisa antes de subir.
+
+---
+
 ## Permisos del token de API (CLOUDFLARE_API_TOKEN)
 
 El error **`Authentication error [code: 10000]`** al desplegar ocurre casi siempre
@@ -223,6 +314,7 @@ Crea el token en https://dash.cloudflare.com/profile/api-tokens con los permisos
 | -------- | ---------------------------------- | -------------------------------------- |
 | Cuenta   | `Cloudflare Pages › Edit`          | Crear y desplegar el proyecto Pages    |
 | Cuenta   | `Cloudflare D1 › Edit`             | Crear/aplicar esquema a la base D1     |
+| Cuenta   | `Cloudflare R2 › Edit`             | Crear el bucket de facturas            |
 | Usuario  | `User Details › Read`              | Resolver identidad al desplegar        |
 | Cuenta   | (opcional) `Workers Scripts › Edit`| Despliegue de las funciones            |
 
@@ -307,6 +399,7 @@ El tema usa **Tailwind CSS v4**. Busca las clases `emerald`, `teal`, `violet` en
 | `npm run db:migrate:local`        | Aplica `schema.sql` a la D1 local            |
 | `npm run db:migrate:remote`       | Aplica `schema.sql` a la D1 remota           |
 | `bash scripts/setup-cloudflare.sh`| Deploy completo automático                   |
+| `npx wrangler r2 bucket create sistema-econ-3e2-facturas` | Crea el bucket de facturas (R2, una vez) |
 | `npx wrangler pages secret put SESSION_SECRET --project-name sistema-econ-3e2` | Configura secreto de sesión |
 
 ---
@@ -351,6 +444,25 @@ El tema usa **Tailwind CSS v4**. Busca las clases `emerald`, `teal`, `violet` en
 **"Error D1_EXEC_ERROR"**
 - D1 no admite múltiples sentencias en `db.exec`; el código usa sentencias
   individuales. No reintroduzcas `db.exec` multi-sentencia.
+
+**"Please enable R2 through the Cloudflare Dashboard [code: 10042]"**
+- R2 no está habilitado en la cuenta. Pide método de pago, actívalo en el
+  Dashboard y crea el bucket. Hasta entonces, registrar un gasto **con** factura
+  devuelve 503 y el archivo no se guarda; sin archivo sí funciona.
+
+**"createWorker is not a function" al pulsar OCR**
+- El bundle de tesseract se rompió. Debe importarse desde
+  `tesseract.js/dist/tesseract.esm.min.js`, no desde `'tesseract.js'`.
+  Ver la nota de build en [Gastos, facturas y OCR](#gastos-facturas-y-ocr).
+
+**El OCR tarda mucho o no encuentra el total**
+- La primera vez descarga el motor y el diccionario español de un CDN. Además
+  el OCRlee mucho mejor fotos nítidas y sin sombras que tickets arrugados:
+  úsalo como confirmación, nunca como única fuente.
+
+**La factura no se guarda en modo local**
+- Es lo esperado: con `npm run dev` no hay backend ni R2, solo LocalStorage.
+  El modal lo avisa. Para probar la subida real, usa `npm run dev:cf`.
 
 **PDF/CSV no descargan**
 - La exportación es 100 % del lado del cliente; revisa que el navegador permita

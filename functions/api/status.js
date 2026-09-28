@@ -19,6 +19,12 @@ export async function onRequestGet(context) {
   const abonos = await context.env.DB.prepare(
     'SELECT id, miembro_id, semana_id, monto, fecha_registro, registrado_por FROM abonos ORDER BY semana_id, miembro_id'
   ).all();
+  const gastos = await context.env.DB.prepare(
+    `SELECT id, concepto, categoria, monto, fecha, nota, registrado_por,
+            nombre_archivo, mime, tamano, fecha_registro,
+            CASE WHEN r2_key IS NULL THEN 0 ELSE 1 END AS tiene_archivo
+     FROM gastos ORDER BY fecha DESC, id DESC`
+  ).all();
 
   const grouped = {};
   for (const a of abonos.results) {
@@ -33,6 +39,7 @@ export async function onRequestGet(context) {
   return json({
     members: members.results,
     weeks: weeks.results,
-    grouped
+    grouped,
+    gastos: gastos.results
   });
 }

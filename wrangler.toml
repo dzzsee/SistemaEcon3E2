@@ -5,4 +5,12 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "sistema-econ-3e2-db"
-database_id = "local-d1-placeholder"
+database_id = "d4dbfbc9-afb9-4116-b577-446cdea6b608"
+
+# Almacenamiento de facturas/recibos de los gastos.
+# El binding debe existir tambien en el dashboard de Pages
+# (Settings > Functions > Bindings) para despliegues con `wrangler pages deploy`.
+[[r2_buckets]]
+binding = "FACTURAS"
+bucket_name = "sistema-econ-3e2-facturas"
+preview_bucket_name = "sistema-econ-3e2-facturas-dev"
