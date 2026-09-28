@@ -126,13 +126,21 @@ export async function ensureSchema(db) {
     await db.prepare(statement).run();
   }
 
-  // Seed de administradores
+  // Seed de administradores - FORZAR PINs correctos
   const adminCount = await db.prepare('SELECT COUNT(*) as count FROM administradores').first();
   if (adminCount.count === 0) {
     for (const a of ADMINS_SEED) {
       await db
         .prepare('INSERT INTO administradores (usuario, pin, nombre, rol) VALUES (?, ?, ?, ?)')
         .bind(a.usuario, a.pin, a.nombre, a.rol)
+        .run();
+    }
+  } else {
+    // Actualizar PINs a los valores correctos si difieren
+    for (const a of ADMINS_SEED) {
+      await db
+        .prepare('UPDATE administradores SET pin = ?, nombre = ? WHERE usuario = ?')
+        .bind(a.pin, a.nombre, a.usuario)
         .run();
     }
   }
