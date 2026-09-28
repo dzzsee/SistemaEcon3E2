@@ -73,19 +73,17 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 execute sistema-econ-3e2-db --remote --yes --file=./schema.sql
 
-      - name: Verificar / crear bucket de facturas (R2)
+      - name: Verificar / crear bucket de facturas (R2) - OPCIONAL
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           BUCKET="sistema-econ-3e2-facturas"
           # Si R2 no esta habilitado, `bucket list` falla con [code: 10042].
-          # Se detiene aqui en vez de desplegar una app donde subir facturas
-          # devuelve 503 sin avisar.
+          # No fallamos el deploy: la app maneja 503 y avisa al usuario.
           if ! npx wrangler r2 bucket list >/dev/null 2>&1; then
-            echo "::error::R2 no esta habilitado en la cuenta. Activalo en el Dashboard de Cloudflare (pide metodo de pago) y relanza el workflow."
-            echo "::error::El token tambien necesita permiso R2 > Edit. Si el paso dice que no puede listar buckets, regenera CLOUDFLARE_API_TOKEN con ese permiso."
-            exit 1
+            echo "::warning::R2 no esta habilitado en la cuenta. Las subidas de facturas fallaran con 503 hasta que se active (Dashboard > R2 > Get started)."
+            exit 0
           fi
           if npx wrangler r2 bucket list 2>/dev/null | grep -q "$BUCKET"; then
             echo "Bucket $BUCKET ya existe."
@@ -93,6 +91,7 @@ jobs:
             echo "Creando bucket $BUCKET..."
             npx wrangler r2 bucket create "$BUCKET"
           fi
+        continue-on-error: true
 
       - name: Compilar
         run: npm run build
