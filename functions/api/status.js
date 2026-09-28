@@ -1,8 +1,9 @@
 import { ensureSchema, json } from '../_lib/db.js';
 import { getAdminFromRequest } from '../_lib/auth.js';
+import { withProtection } from '../_lib/security.js';
 
 // GET /api/status - estado completo (miembros + semanas + abonos) para renderizar la planilla
-export async function onRequestGet(context) {
+async function handler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -43,3 +44,5 @@ export async function onRequestGet(context) {
     gastos: gastos.results
   });
 }
+
+export const onRequestGet = withProtection(handler);

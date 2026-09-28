@@ -1,5 +1,6 @@
 import { ensureSchema, json, ARCHIVOS_PERMITIDOS, MAX_ARCHIVO_BYTES } from '../_lib/db.js';
 import { getAdminFromRequest } from '../_lib/auth.js';
+import { withProtection, sanitizeString, validateAmount, validateDate } from '../_lib/security.js';
 
 const CATEGORIAS = ['Papelería', 'Eventos', 'Transporte', 'Materiales', 'Otros'];
 
@@ -14,7 +15,7 @@ function sanitizeFileName(name) {
 }
 
 // GET /api/expenses - lista de gastos registrados (requiere auth)
-export async function onRequestGet(context) {
+async function getHandler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -34,7 +35,7 @@ export async function onRequestGet(context) {
 
 // POST /api/expenses - registra un gasto con su factura/recibo (requiere auth)
 // multipart/form-data: concepto, monto, fecha, categoria?, nota?, factura?
-export async function onRequestPost(context) {
+async function postHandler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -43,21 +44,24 @@ export async function onRequestPost(context) {
   // OJO: getBody() de _lib/db.js hace request.json() y no sirve para multipart.
   const form = await context.request.formData();
 
-  const concepto = String(form.get('concepto') || '').trim();
+  const concepto = sanitizeString(form.get('concepto') || '', 200);
   const montoRaw = Number(form.get('monto'));
   const fecha = String(form.get('fecha') || '').trim();
-  const categoria = String(form.get('categoria') || '').trim();
-  const nota = String(form.get('nota') || '').trim();
+  const categoria = sanitizeString(form.get('categoria') || '', 50);
+  const nota = sanitizeString(form.get('nota') || '', 500);
   const archivo = form.get('factura');
 
   if (!concepto) {
     return json({ success: false, message: 'El concepto del gasto es obligatorio.' }, 400);
   }
-  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+  if (!validateDate(fecha)) {
     return json({ success: false, message: 'Indica una fecha válida (AAAA-MM-DD).' }, 400);
   }
-  if (!montoRaw || Number.isNaN(montoRaw) || montoRaw <= 0) {
-    return json({ success: false, message: 'El monto debe ser mayor a cero.' }, 400);
+  if (!validateAmount(montoRaw)) {
+    return json({ success: false, message: 'El monto debe ser mayor a cero y menor a 1,000,000.' }, 400);
+  }
+  if (categoria && !CATEGORIAS.includes(categoria)) {
+    return json({ success: false, message: 'Categoría inválida.' }, 400);
   }
 
   const tieneArchivo = archivo && typeof archivo === 'object' && typeof archivo.arrayBuffer === 'function';
@@ -144,4 +148,6 @@ export async function onRequestPost(context) {
   });
 }
 
+export const onRequestGet = withProtection(getHandler);
+export const onRequestPost = withProtection(postHandler, { maxBodySize: 11 * 1024 * 1024 }); // 11MB para archivo + metadata
 export { CATEGORIAS };

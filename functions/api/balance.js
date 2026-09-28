@@ -1,8 +1,9 @@
 import { ensureSchema, json } from '../_lib/db.js';
 import { getAdminFromRequest } from '../_lib/auth.js';
+import { withProtection } from '../_lib/security.js';
 
 // GET /api/balance - resumen del balance global (requiere auth)
-export async function onRequestGet(context) {
+async function handler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -44,3 +45,5 @@ export async function onRequestGet(context) {
     totalSemanas: semanas.results.length
   });
 }
+
+export const onRequestGet = withProtection(handler);

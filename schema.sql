@@ -55,6 +55,12 @@ CREATE INDEX IF NOT EXISTS idx_abonos_miembro ON abonos(miembro_id);
 CREATE INDEX IF NOT EXISTS idx_abonos_semana ON abonos(semana_id);
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
 
+CREATE TABLE IF NOT EXISTS rate_limits (
+    key TEXT PRIMARY KEY,
+    timestamp INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_timestamp ON rate_limits(timestamp);
+
 -- ============================================================
 -- Semillas
 --

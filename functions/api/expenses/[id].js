@@ -1,19 +1,24 @@
 import { json } from '../../_lib/db.js';
 import { getAdminFromRequest } from '../../_lib/auth.js';
+import { withProtection, validateUUID } from '../../_lib/security.js';
 
 async function cargarGasto(context, id) {
+  // Validar que el ID sea numérico
+  const numId = Number(id);
+  if (isNaN(numId) || numId <= 0) return null;
+  
   const row = await context.env.DB.prepare(
     `SELECT id, concepto, monto, r2_key, nombre_archivo, mime
      FROM gastos WHERE id = ?`
   )
-    .bind(Number(id))
+    .bind(numId)
     .first();
   return row || null;
 }
 
 // GET /api/expenses/:id - descarga o previsualiza la factura (requiere auth)
 // ?download=1 fuerza la descarga en vez de mostrarlo inline.
-export async function onRequestGet(context) {
+async function getHandler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -56,7 +61,7 @@ export async function onRequestGet(context) {
 }
 
 // DELETE /api/expenses/:id - elimina el gasto y su factura (requiere auth)
-export async function onRequestDelete(context) {
+async function deleteHandler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -84,3 +89,6 @@ export async function onRequestDelete(context) {
 
   return json({ success: true, id: gasto.id });
 }
+
+export const onRequestGet = withProtection(getHandler);
+export const onRequestDelete = withProtection(deleteHandler);

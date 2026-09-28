@@ -1,8 +1,9 @@
 import { ensureSchema, json, getBody } from '../_lib/db.js';
 import { getAdminFromRequest } from '../_lib/auth.js';
+import { withProtection, sanitizeString, validateAmount } from '../_lib/security.js';
 
 // POST /api/payments - registra un abono de un miembro en una semana (requiere auth)
-export async function onRequestPost(context) {
+async function postHandler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -16,8 +17,8 @@ export async function onRequestPost(context) {
   }
 
   const montoNum = Number(monto);
-  if (isNaN(montoNum) || montoNum <= 0) {
-    return json({ success: false, message: 'El monto debe ser mayor a cero.' }, 400);
+  if (!validateAmount(montoNum)) {
+    return json({ success: false, message: 'El monto debe ser mayor a cero y menor a 1,000,000.' }, 400);
   }
 
   await ensureSchema(context.env.DB);
@@ -26,7 +27,7 @@ export async function onRequestPost(context) {
     `INSERT INTO abonos (miembro_id, semana_id, monto, registrado_por, nota)
      VALUES (?, ?, ?, ?, ?)`
   )
-    .bind(Number(miembro_id), Number(semana_id), montoNum, admin.nombre, nota || '')
+    .bind(Number(miembro_id), Number(semana_id), montoNum, admin.nombre, sanitizeString(nota || '', 500))
     .run();
 
   // Retornar el total abonado acumulado del miembro en la semana
@@ -51,7 +52,7 @@ export async function onRequestPost(context) {
 }
 
 // GET /api/payments - historial completo de abonos (requiere auth)
-export async function onRequestGet(context) {
+async function getHandler(context) {
   const admin = await getAdminFromRequest(context.request, context.env);
   if (!admin) {
     return json({ success: false, message: 'No autorizado. Inicia sesión nuevamente.' }, 401);
@@ -64,3 +65,6 @@ export async function onRequestGet(context) {
   ).all();
   return json(results);
 }
+
+export const onRequestGet = withProtection(getHandler);
+export const onRequestPost = withProtection(postHandler);
