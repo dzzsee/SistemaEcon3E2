@@ -89,7 +89,7 @@ export function validateUUID(uuid) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
 }
 
-// CORS para desarrollo local (en producción Cloudflare Pages maneja CORS)
+// CORS para desarrollo local y preview deployments
 export function corsHeaders(request) {
   const origin = request.headers.get('Origin');
   const allowedOrigins = [
@@ -104,7 +104,13 @@ export function corsHeaders(request) {
     'Access-Control-Max-Age': '86400'
   };
   
-  if (origin && allowedOrigins.includes(origin)) {
+  // Permitir preview deployments (*.sistema-econ-3e2.pages.dev) y production
+  const isAllowed = origin && (
+    allowedOrigins.includes(origin) ||
+    /^https:\/\/[a-z0-9-]+\.sistema-econ-3e2\.pages\.dev$/.test(origin)
+  );
+  
+  if (isAllowed) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Credentials'] = 'true';
   }
