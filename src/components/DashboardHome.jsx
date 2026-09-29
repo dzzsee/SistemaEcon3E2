@@ -89,6 +89,7 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
   const anchoBarra = Math.max(0, Math.min(100, pct));
   const totalGastos = balance.totalGastos || 0;
   const numGastos = status.gastos?.length || 0;
+  const totalAlumnos = status.members.length;
   const weeksToShow = useMemo(() => {
     const weeks = [...status.weeks].sort((a, b) => a.numero_semana - b.numero_semana);
     if (!status.members.length) return weeks;
@@ -123,7 +124,7 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
           icon={AlertTriangle}
           label="En deuda"
           value={money(balance.totalDeuda)}
-          sub={`${balance.totalAlumnos} integrantes · ${balance.totalSemanas} semanas`}
+          sub={`${totalAlumnos} integrantes · ${balance.totalSemanas} semanas`}
           accent="bg-rose-500/15 text-rose-400"
           delay={80}
         />
@@ -154,7 +155,7 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
         <Card
           icon={CheckCircle2}
           label="Grupo"
-          value={`${balance.totalAlumnos}`}
+          value={`${totalAlumnos}`}
           sub="integrantes inscritos"
           accent="bg-violet-500/15 text-violet-400"
           delay={400}
