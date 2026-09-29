@@ -274,25 +274,27 @@ export const dbService = {
     const totalGastos = gastos.reduce((acc, g) => acc + Number(g.monto), 0);
     const totalEsperado = weeks.reduce((acc, w) => acc + w.monto_cuota * members.length, 0);
     const hoy = new Date().toISOString().slice(0, 10);
-    const totalEsperadoCursado = weeks
-      .filter((w) => w.fecha_fin < hoy)
+    const semanasCursadas = weeks.filter((w) => w.fecha_inicio <= hoy);
+    const totalEsperadoCursado = semanasCursadas
       .reduce((acc, w) => acc + w.monto_cuota * members.length, 0);
 
     // Espejo exacto de functions/api/balance.js: los gastos aumentan la deuda y
     // saldoCaja puede quedar negativo.
     const saldoCaja = totalRecaudado - totalGastos;
     const totalDeuda = Math.max(0, totalEsperadoCursado - totalRecaudado + totalGastos);
-    const porcentajeCobro = totalEsperado > 0 ? (saldoCaja / totalEsperado) * 100 : 0;
+    const porcentajeCobro = totalEsperadoCursado > 0 ? (saldoCaja / totalEsperadoCursado) * 100 : 0;
 
     return {
       totalRecaudado,
       totalGastos,
       saldoCaja,
-      totalEsperado,
+      totalEsperado: totalEsperadoCursado,
+      totalEsperadoPeriodo: totalEsperado,
       totalDeuda,
       porcentajeCobro: Number(porcentajeCobro.toFixed(1)),
       totalAlumnos: members.length,
-      totalSemanas: weeks.length
+      totalSemanas: weeks.length,
+      semanasCursadas: semanasCursadas.length
     };
   },
 

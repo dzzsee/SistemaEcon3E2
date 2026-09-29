@@ -27,8 +27,8 @@ async function handler(context) {
     0
   );
   const hoy = new Date().toISOString().slice(0, 10);
-  const totalEsperadoCursado = semanas.results
-    .filter((s) => s.fecha_fin < hoy)
+  const semanasCursadas = semanas.results.filter((s) => s.fecha_inicio <= hoy);
+  const totalEsperadoCursado = semanasCursadas
     .reduce((acc, s) => acc + s.monto_cuota * members.results.length, 0);
 
   // Los gastos salen de la caja del grupo, asi que aumentan lo que falta por
@@ -36,17 +36,19 @@ async function handler(context) {
   // con max(0, ...) a proposito: puede ser negativo si se gastó más de lo cobrado.
   const saldoCaja = totalRecaudado - totalGastos;
   const totalDeuda = Math.max(0, totalEsperadoCursado - totalRecaudado + totalGastos);
-  const porcentajeCobro = totalEsperado > 0 ? (saldoCaja / totalEsperado) * 100 : 0;
+  const porcentajeCobro = totalEsperadoCursado > 0 ? (saldoCaja / totalEsperadoCursado) * 100 : 0;
 
   return json({
     totalRecaudado,
     totalGastos,
     saldoCaja,
-    totalEsperado,
+    totalEsperado: totalEsperadoCursado,
+    totalEsperadoPeriodo: totalEsperado,
     totalDeuda,
     porcentajeCobro: Number(porcentajeCobro.toFixed(1)),
     totalAlumnos: members.results.length,
-    totalSemanas: semanas.results.length
+    totalSemanas: semanas.results.length,
+    semanasCursadas: semanasCursadas.length
   });
 }
 

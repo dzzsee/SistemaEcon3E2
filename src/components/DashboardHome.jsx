@@ -124,7 +124,7 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
           icon={AlertTriangle}
           label="En deuda"
           value={money(balance.totalDeuda)}
-          sub={`${totalAlumnos} integrantes · ${balance.totalSemanas} semanas`}
+          sub={`${totalAlumnos} integrantes · ${balance.semanasCursadas} semanas cursadas`}
           accent="bg-rose-500/15 text-rose-400"
           delay={80}
         />
