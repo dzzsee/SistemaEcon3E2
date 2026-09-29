@@ -7,6 +7,12 @@ export const ADMINS_SEED = [
   { usuario: 'tesorero', pin: '3456', nombre: 'Tesorero 3E2', rol: 'tesorero' }
 ];
 
+const CONFIG_SEED = {
+  cuota_semanal: '20',
+  periodo_inicio: '',
+  periodo_fin: ''
+};
+
 export const MEMBERS_SEED = [
   { numero_lista: 1, nombre: 'Álvarez Mendoza Diego' },
   { numero_lista: 2, nombre: 'Benítez Castro Sofía' },
@@ -114,6 +120,10 @@ const SCHEMA_STATEMENTS = [
     key TEXT PRIMARY KEY,
     timestamp INTEGER NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS configuracion (
+    clave TEXT PRIMARY KEY,
+    valor TEXT NOT NULL
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_abonos_miembro ON abonos(miembro_id)`,
   `CREATE INDEX IF NOT EXISTS idx_abonos_semana ON abonos(semana_id)`,
   `CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha)`,
@@ -168,6 +178,80 @@ export async function ensureSchema(db) {
         .run();
     }
   }
+
+  const firstWeek = await db.prepare('SELECT fecha_inicio FROM semanas ORDER BY fecha_inicio LIMIT 1').first();
+  const lastWeek = await db.prepare('SELECT fecha_fin FROM semanas ORDER BY fecha_fin DESC LIMIT 1').first();
+  const configSeed = {
+    ...CONFIG_SEED,
+    periodo_inicio: firstWeek?.fecha_inicio || '',
+    periodo_fin: lastWeek?.fecha_fin || ''
+  };
+  for (const [clave, valor] of Object.entries(configSeed)) {
+    await db
+      .prepare('INSERT OR IGNORE INTO configuracion (clave, valor) VALUES (?, ?)')
+      .bind(clave, String(valor))
+      .run();
+  }
+}
+
+export async function getConfig(db) {
+  const { results } = await db.prepare('SELECT clave, valor FROM configuracion').all();
+  return { ...CONFIG_SEED, ...Object.fromEntries(results.map((row) => [row.clave, row.valor])) };
+}
+
+export async function setConfig(db, values) {
+  for (const [clave, valor] of Object.entries(values)) {
+    if (!(clave in CONFIG_SEED)) continue;
+    await db
+      .prepare('INSERT INTO configuracion (clave, valor) VALUES (?, ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor')
+      .bind(clave, String(valor))
+      .run();
+  }
+  return getConfig(db);
+}
+
+export async function regenerateWeeks(db, { monto_cuota, fecha_inicio, fecha_fin }) {
+  const start = new Date(`${fecha_inicio}T00:00:00`);
+  const end = new Date(`${fecha_fin}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+    throw new Error('El periodo no es válido.');
+  }
+
+  const weeks = [];
+  for (let cursor = new Date(start), numero = 1; cursor <= end; numero++) {
+    const weekEnd = new Date(cursor);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weeks.push({
+      numero_semana: numero,
+      fecha_inicio: formatDateISO(cursor),
+      fecha_fin: formatDateISO(weekEnd),
+      monto_cuota: Number(monto_cuota),
+      descripcion: `Semana ${numero}`
+    });
+    cursor.setDate(cursor.getDate() + 7);
+  }
+
+  const keepStarts = new Set(weeks.map((week) => week.fecha_inicio));
+  const existing = await db.prepare('SELECT id, fecha_inicio FROM semanas').all();
+  for (const week of existing.results) {
+    if (!keepStarts.has(week.fecha_inicio)) {
+      await db.prepare('DELETE FROM abonos WHERE semana_id = ?').bind(week.id).run();
+      await db.prepare('DELETE FROM semanas WHERE id = ?').bind(week.id).run();
+    }
+  }
+
+  for (const week of weeks) {
+    const current = await db.prepare('SELECT id FROM semanas WHERE fecha_inicio = ?').bind(week.fecha_inicio).first();
+    if (current) {
+      await db.prepare('UPDATE semanas SET numero_semana = ?, fecha_fin = ?, monto_cuota = ?, descripcion = ? WHERE id = ?')
+        .bind(week.numero_semana, week.fecha_fin, week.monto_cuota, week.descripcion, current.id).run();
+    } else {
+      await db.prepare('INSERT INTO semanas (numero_semana, fecha_inicio, fecha_fin, monto_cuota, descripcion) VALUES (?, ?, ?, ?, ?)')
+        .bind(week.numero_semana, week.fecha_inicio, week.fecha_fin, week.monto_cuota, week.descripcion).run();
+    }
+  }
+
+  return { weeks: weeks.length };
 }
 
 export function json(data, status = 200, extraHeaders = {}) {

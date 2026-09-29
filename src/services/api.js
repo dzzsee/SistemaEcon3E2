@@ -253,6 +253,74 @@ export async function createWeek({ fecha_inicio, fecha_fin, monto_cuota, descrip
   return dbService.addWeek(fecha_inicio, fecha_fin, monto_cuota, descripcion);
 }
 
+export async function getConfig() {
+  const mode = await detectMode();
+  if (mode === 'd1') {
+    try {
+      const res = await fetch('/api/config', { headers: tokenHeader() });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error('no-auth');
+    } catch (e) {
+      if (e.message === 'no-auth') throw e;
+    }
+  }
+  return fallbackToLocal(() => ({ success: true, config: dbService.getConfig(), admins: dbService.getAdmins() }));
+}
+
+export async function saveConfig(payload) {
+  const mode = await detectMode();
+  if (mode === 'd1') {
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...tokenHeader() },
+        body: JSON.stringify({ accion: 'config', ...payload })
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error('no-auth');
+    } catch (e) {
+      if (e.message === 'no-auth') throw e;
+    }
+  }
+  return fallbackToLocal(() => dbService.saveConfig(payload));
+}
+
+export async function regenerateWeeks(payload) {
+  const mode = await detectMode();
+  if (mode === 'd1') {
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...tokenHeader() },
+        body: JSON.stringify({ accion: 'semana', ...payload })
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error('no-auth');
+    } catch (e) {
+      if (e.message === 'no-auth') throw e;
+    }
+  }
+  return fallbackToLocal(() => dbService.regenerateWeeks(payload));
+}
+
+export async function updateAdmin(payload) {
+  const mode = await detectMode();
+  if (mode === 'd1') {
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...tokenHeader() },
+        body: JSON.stringify({ accion: 'usuario', ...payload })
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error('no-auth');
+    } catch (e) {
+      if (e.message === 'no-auth') throw e;
+    }
+  }
+  return fallbackToLocal(() => dbService.updateAdmin(payload));
+}
+
 export function resetDemo() {
   dbService.reset();
 }

@@ -89,6 +89,18 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
   const anchoBarra = Math.max(0, Math.min(100, pct));
   const totalGastos = balance.totalGastos || 0;
   const numGastos = status.gastos?.length || 0;
+  const weeksToShow = useMemo(() => {
+    const weeks = [...status.weeks].sort((a, b) => a.numero_semana - b.numero_semana);
+    if (!status.members.length) return weeks;
+    return weeks.filter((week) => {
+      const pagados = status.members.reduce((total, member) => {
+        const key = `${member.numero_lista}-${week.id}`;
+        const abonado = Number(status.grouped?.[key]?.total || 0);
+        return total + (abonado >= Number(week.monto_cuota) ? 1 : 0);
+      }, 0);
+      return pagados < status.members.length;
+    });
+  }, [status]);
 
   return (
     <div className="space-y-6">
@@ -187,9 +199,13 @@ export default function DashboardHome({ balance, status, onNavigate, session }) 
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[...status.weeks].slice(-6).reverse().map((w) => (
-            <SemanaCard key={w.id} week={w} status={status} onNavigate={onNavigate} />
-          ))}
+          {weeksToShow.length > 0 ? (
+            weeksToShow.map((w) => <SemanaCard key={w.id} week={w} status={status} onNavigate={onNavigate} />)
+          ) : (
+            <div className="glass-card rounded-2xl py-8 text-center text-sm text-emerald-300 sm:col-span-2 lg:col-span-3">
+              Todas las semanas están completamente pagadas.
+            </div>
+          )}
         </div>
       </div>
     </div>

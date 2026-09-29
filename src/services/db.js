@@ -78,6 +78,7 @@ const STORAGE_KEYS = {
   WEEKS: 'econ3e2_weeks',
   ABONOS: 'econ3e2_abonos',
   GASTOS: 'econ3e2_gastos',
+  CONFIG: 'econ3e2_config',
   SESSION: '3e2_session'
 };
 
@@ -98,6 +99,14 @@ function seedIfMissing() {
   if (!weeks) write(STORAGE_KEYS.WEEKS, generateDefaultWeeks());
   if (!localStorage.getItem(STORAGE_KEYS.ABONOS)) write(STORAGE_KEYS.ABONOS, []);
   if (!localStorage.getItem(STORAGE_KEYS.GASTOS)) write(STORAGE_KEYS.GASTOS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.CONFIG)) {
+    const weeks = read(STORAGE_KEYS.WEEKS, []);
+    write(STORAGE_KEYS.CONFIG, {
+      cuota_semanal: weeks[0]?.monto_cuota || 20,
+      periodo_inicio: weeks[0]?.fecha_inicio || '',
+      periodo_fin: weeks.at(-1)?.fecha_fin || ''
+    });
+  }
 }
 
 export const dbService = {
@@ -114,6 +123,61 @@ export const dbService = {
   getWeeks() {
     seedIfMissing();
     return read(STORAGE_KEYS.WEEKS, generateDefaultWeeks());
+  },
+
+  getConfig() {
+    seedIfMissing();
+    return read(STORAGE_KEYS.CONFIG, {});
+  },
+
+  saveConfig(values) {
+    seedIfMissing();
+    const config = { ...this.getConfig(), ...values };
+    write(STORAGE_KEYS.CONFIG, config);
+    const weeks = this.getWeeks().map((week) => ({ ...week, monto_cuota: Number(config.cuota_semanal) }));
+    write(STORAGE_KEYS.WEEKS, weeks);
+    return { success: true, config };
+  },
+
+  regenerateWeeks(values) {
+    seedIfMissing();
+    const start = new Date(`${values.periodo_inicio}T00:00:00`);
+    const end = new Date(`${values.periodo_fin}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+      return { success: false, message: 'El periodo no es válido.' };
+    }
+    const weeks = [];
+    for (let cursor = new Date(start), numero = 1; cursor <= end; numero++) {
+      const weekEnd = new Date(cursor);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weeks.push({
+        id: Date.now() + numero,
+        numero_semana: numero,
+        fecha_inicio: formatDateISO(cursor),
+        fecha_fin: formatDateISO(weekEnd),
+        monto_cuota: Number(values.cuota_semanal),
+        descripcion: `Semana ${numero}`
+      });
+      cursor.setDate(cursor.getDate() + 7);
+    }
+    write(STORAGE_KEYS.WEEKS, weeks);
+    write(STORAGE_KEYS.CONFIG, values);
+    return { success: true, weeks: weeks.length };
+  },
+
+  updateAdmin({ id, nombre, usuario, pin }) {
+    seedIfMissing();
+    const admins = this.getAdmins();
+    const admin = admins.find((item) => item.id === Number(id));
+    if (!admin) return { success: false, message: 'Usuario no encontrado.' };
+    if (admins.some((item) => item.id !== admin.id && item.usuario === usuario)) {
+      return { success: false, message: 'Ese usuario ya existe.' };
+    }
+    admin.nombre = nombre;
+    admin.usuario = usuario;
+    if (pin) admin.pin = pin;
+    write(STORAGE_KEYS.ADMINS, admins);
+    return { success: true, admins };
   },
 
   addWeek(fecha_inicio, fecha_fin, monto_cuota, descripcion) {
