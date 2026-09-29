@@ -12,7 +12,7 @@ async function handler(context) {
   await ensureSchema(context.env.DB);
 
   const members = await context.env.DB.prepare('SELECT numero_lista FROM miembros').all();
-  const semanas = await context.env.DB.prepare('SELECT id, monto_cuota, fecha_fin FROM semanas').all();
+  const semanas = await context.env.DB.prepare('SELECT id, monto_cuota, fecha_inicio, fecha_fin FROM semanas').all();
   const recaudadoRow = await context.env.DB.prepare(
     'SELECT COALESCE(SUM(monto), 0) as total FROM abonos'
   ).first();
